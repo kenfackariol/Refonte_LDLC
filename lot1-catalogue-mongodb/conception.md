@@ -23,6 +23,7 @@ MongoDB en replica set est **CP** : un seul primaire accepte les écritures. En 
 On règle ensuite la cohérence **requête par requête**, selon le besoin métier :
 - **Fiche produit, listes et recherche** : `readPreference: "secondaryPreferred"`. Une description lue avec quelques millisecondes de retard ne pose aucun problème, et cela soulage le primaire pendant les pics de trafic (sorties de GPU…).
 - **Prix et stock au moment de l'ajout au panier ou de la commande** : lecture sur le primaire avec `readConcern: "majority"`, car un prix erroné n'est pas acceptable.
+- **Réservation du stock au paiement** : décrément **conditionnel et atomique** sur le primaire (`stock.quantity >= quantité demandée`), dans une transaction multi-documents quand la commande contient plusieurs produits (Q9). C'est ce qui empêche de vendre deux fois la dernière carte graphique lors d'une sortie très attendue.
 - **Écritures** (back-office) : `writeConcern: { w: "majority" }`, pour qu'aucune modification acquittée ne soit perdue lors d'une bascule.
 
 ---
@@ -161,13 +162,15 @@ La règle appliquée : **on imbrique ce qui est lu avec la fiche et reste borné
 ```js
 db.products.createIndex({ sku: 1 },  { unique: true })
 db.products.createIndex({ slug: 1 }, { unique: true })              // page produit
-db.products.createIndex({ "category._id": 1, "price.amount": 1 })   // liste par catégorie, triée par prix
+db.products.createIndex({ "category.path": 1, "price.amount": 1 }) // liste par catégorie, triée par prix (Q2, Q6)
 db.products.createIndex({ "brand._id": 1 })
 db.products.createIndex({ "attributes.k": 1, "attributes.v": 1 })   // Attribute pattern
 db.products.createIndex({ name: "text", description: "text" },
                         { default_language: "french" })              // recherche plein texte
 db.reviews.createIndex({ productId: 1, createdAt: -1 })             // avis paginés d'un produit
 ```
+
+L'index composé porte sur `category.path` parce que c'est le champ filtré par les listes (Q2, Q6) : l'égalité sur `category.path` puis le tri sur `price.amount` sont servis par le même index, sans tri en mémoire. Le renommage d'une catégorie (`updateMany` sur `category._id`) est rare et peut se permettre un parcours de la collection (27 000 documents).
 
 ---
 
@@ -227,3 +230,19 @@ db.products.aggregate([
   { $sort: { noteMoyenne: -1 } }
 ])
 ```
+
+**Q9 — Réserver le stock au paiement (décrément conditionnel, atomique)**
+```js
+const session = db.getMongo().startSession();
+session.withTransaction(() => {
+  const products = session.getDatabase("ldlc_catalogue").products;
+  for (const { sku, qty } of panier) {
+    const r = products.updateOne(
+      { sku, "stock.quantity": { $gte: qty } },   // condition : assez de stock
+      { $inc: { "stock.quantity": -qty } }
+    );
+    if (r.modifiedCount === 0) throw new Error(`Rupture de stock : ${sku}`); // annule toute la transaction
+  }
+}, { writeConcern: { w: "majority" }, readConcern: { level: "majority" } });
+```
+Le filtre et le décrément sont évalués ensemble sur le document : deux clients qui achètent la dernière unité en même temps ne peuvent pas réussir tous les deux. La transaction garantit le « tout ou rien » pour une commande de plusieurs produits. Si le paiement échoue ensuite, une écriture de compensation remet le stock (`$inc` positif).

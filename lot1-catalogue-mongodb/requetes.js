@@ -108,7 +108,7 @@ db.products.insertMany([
 // ---------------------------------------------------------------
 db.products.createIndex({ sku: 1 },  { unique: true });
 db.products.createIndex({ slug: 1 }, { unique: true });
-db.products.createIndex({ "category._id": 1, "price.amount": 1 });
+db.products.createIndex({ "category.path": 1, "price.amount": 1 });
 db.products.createIndex({ "brand._id": 1 });
 db.products.createIndex({ "attributes.k": 1, "attributes.v": 1 });
 db.products.createIndex({ name: "text", description: "text" }, { default_language: "french" });
@@ -183,3 +183,19 @@ db.products.find({ $text: { $search: "processeur jeu" } }, { _id: 0, name: 1, sc
 
 titre("Q8 - Polymorphisme : produits v1 et v2 lus ensemble");
 db.products.find({}, { _id: 0, name: 1, type: 1, schemaVersion: 1 }).forEach(printjson);
+
+titre("Q9 - Réservation du stock au paiement (décrément conditionnel atomique)");
+// Version mono-produit : le filtre et le décrément sont appliqués ensemble sur le document.
+function reserver(sku, qty) {
+  const r = db.products.updateOne(
+    { sku, "stock.quantity": { $gte: qty } },
+    { $inc: { "stock.quantity": -qty } },
+    { writeConcern: { w: "majority" } }
+  );
+  return r.modifiedCount === 1;
+}
+print(`Réserver 2 x AMD-R7-7800X3D : ${reserver("AMD-R7-7800X3D", 2)}`);   // true (stock 142)
+print(`Réserver 1 x INTEL-CU7-265K : ${reserver("INTEL-CU7-265K", 1)}`);   // false (stock 0)
+printjson(db.products.findOne({ sku: "AMD-R7-7800X3D" }, { _id: 0, stock: 1 })); // 140
+// Commande de plusieurs produits : même logique dans session.withTransaction(),
+// voir conception.md (Q9). Les transactions demandent un replica set.

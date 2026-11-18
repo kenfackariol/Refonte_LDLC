@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Refonte LDLC — Document de conception NoSQL</title>
+<style>
+  @page { size: A4; margin: 12mm 13mm 12mm 13mm; }
+  * { box-sizing: border-box; }
+  body { font-family: "Inter", "DejaVu Sans", sans-serif; font-size: 8.9pt; line-height: 1.38; color: #1d1d1f; margin: 0; }
+  h1 { font-size: 21pt; margin: 0 0 2mm; letter-spacing: -0.3px; }
+  h2 { font-size: 13.5pt; margin: 0 0 3mm; padding-bottom: 1.5mm; border-bottom: 2px solid var(--c, #333); color: #111; page-break-after: avoid; }
+  h2:not(:first-child) { margin-top: 4mm; }
+  h3 { font-size: 10.3pt; margin: 3mm 0 1.2mm; page-break-after: avoid; color: var(--c, #333); }
+  p { margin: 0 0 2mm; }
+  ul { margin: 0 0 2mm; padding-left: 5mm; }
+  li { margin-bottom: 0.6mm; }
+  table { width: 100%; border-collapse: collapse; margin: 1mm 0 3mm; font-size: 8.4pt; page-break-inside: avoid; }
+  th, td { border: 1px solid #d6d6d6; padding: 1.2mm 1.8mm; text-align: left; vertical-align: top; }
+  th { background: #f2f2f2; font-weight: 600; }
+  code { font-family: "DejaVu Sans Mono", monospace; font-size: 8pt; background: #f4f4f4; padding: 0 1px; }
+  pre { font-family: "DejaVu Sans Mono", monospace; font-size: 7.6pt; line-height: 1.35; background: #f7f7f8; border-left: 3px solid var(--c, #999); padding: 2mm 3mm; margin: 1mm 0 3mm; white-space: pre-wrap; page-break-inside: avoid; }
+  /* Les sections s'enchaînent sans saut de page forcé : le document tient ainsi en 10 pages A4. */
+  .page { page-break-after: auto; }
+  .lot1 { --c: #2e7d32; } .lot2 { --c: #c0392b; } .lot3 { --c: #1b6f8c; } .lot4 { --c: #1a56db; } .gen { --c: #444; }
+  .tag { display: inline-block; font-size: 7.8pt; font-weight: 600; padding: 0.4mm 2mm; border-radius: 3mm; background: var(--c); color: #fff; margin-right: 1.5mm; }
+  .box { border: 1px solid #ddd; background: #fafafa; padding: 2mm 3mm; margin: 1mm 0 3mm; border-radius: 1.5mm; }
+  .cols { display: flex; gap: 5mm; } .cols > div { flex: 1; min-width: 0; }
+  .cover-meta { color: #555; font-size: 10pt; margin-bottom: 6mm; }
+  .small { font-size: 8pt; color: #555; }
+  .archi { width: 100%; border: 1px solid #ddd; margin: 1mm 0 3mm; }
+  pre.mermaid { background: #fff; border-left: 1px solid #ddd; padding: 1mm; text-align: center; white-space: pre; }
+  pre.mermaid svg { max-width: 100%; height: auto; max-height: 115mm; }
+</style>
+</head>
+<body>
+
+<!-- ================================ PAGE 1 ================================ -->
+<section class="page gen">
+  <h1>Refonte LDLC — Architecture de données NoSQL</h1>
+  <div class="cover-meta">
+    Projet NSL NoSQL · Document de conception<br>
+    Binôme : <b>Ariol Kenfack</b> et <b>Raphael Deutou</b> · Novembre 2026<br>
+    Dépôt : github.com/kenfackariol/Refonte_LDLC
+  </div>
+
+  <h2>1. Contexte et démarche</h2>
+  <p>LDLC (e-commerce high-tech : plus de 27 000 références, plus de 600 marques, des millions de visites mensuelles, jusqu'à 25 000 colis par jour) voit sa base relationnelle monolithique atteindre ses limites. Notre mission : concevoir l'architecture de données NoSQL de la nouvelle plateforme sur quatre périmètres fonctionnels.</p>
+  <p>Notre démarche repose sur trois principes vus en cours :</p>
+  <ul>
+    <li><b>Persistance polyglotte</b> : aucune base ne répond seule à des besoins aussi différents. Chaque lot reçoit le modèle de données adapté à ses contraintes.</li>
+    <li><b>Query-Driven Design</b> : on part des requêtes métier pour construire le schéma, et non l'inverse.</li>
+    <li><b>Compromis CAP explicites</b> : pour chaque donnée, on décide ce qui prime entre cohérence et disponibilité selon le coût métier d'une erreur.</li>
+  </ul>
+
+  <h2>2. Synthèse des choix</h2>
+  <table>
+    <tr><th>Lot</th><th>Besoin dominant</th><th>Technologie</th><th>Modèle</th><th>CAP</th><th>Argument décisif</th></tr>
+    <tr><td><span class="tag" style="background:#2e7d32">1</span>Catalogue</td><td>Schémas variables, lectures fréquentes</td><td><b>MongoDB</b></td><td>Document</td><td>CP</td><td>Une fiche = un document lu sans jointure ; évolution sans migration</td></tr>
+    <tr><td><span class="tag" style="background:#c0392b">2</span>Panier &amp; sessions</td><td>Latence sub-ms, volatilité</td><td><b>Redis</b></td><td>Clé-valeur en mémoire</td><td>AP</td><td>Données en RAM, TTL natif, partagé entre serveurs</td></tr>
+    <tr><td><span class="tag" style="background:#1b6f8c">3</span>Logs &amp; analytics</td><td>Millions d'écritures/jour, années d'historique</td><td><b>Cassandra</b></td><td>Colonnes larges</td><td>AP</td><td>Écriture append-only, scalabilité linéaire, séries temporelles</td></tr>
+    <tr><td><span class="tag" style="background:#1a56db">4</span>Recommandations</td><td>Parcours de relations</td><td><b>Neo4j</b></td><td>Graphe</td><td>CP</td><td>Index-free adjacency : coût d'un saut indépendant du volume</td></tr>
+  </table>
+
+  <div class="box"><b>Lecture CAP de l'ensemble.</b> Nous choisissons <b>CP là où une erreur coûte de l'argent</b> (prix et stock du catalogue, intégrité du graphe), et <b>AP là où l'indisponibilité coûte plus cher qu'une incohérence passagère</b> (un panier qui ne répond pas fait perdre une vente ; un clic non compté n'a aucun impact). Les systèmes CP sont ensuite assouplis en lecture (lecture sur secondaires), et les systèmes AP sont durcis là où c'est nécessaire (<code>LOCAL_QUORUM</code> pour les commandes dans Cassandra). Le seul invariant financier strict, <b>ne pas vendre un produit absent</b>, est garanti par MongoDB (décrément conditionnel du stock).</div>
+
+  <h2>3. Organisation du dépôt</h2>
+  <table>
+    <tr><th>Dossier</th><th>Contenu</th></tr>
+    <tr><td><code>architecture/</code></td><td>Schéma global (source Mermaid, rendu par GitHub) et description des flux</td></tr>
+    <tr><td><code>lot1-catalogue-mongodb/</code></td><td><code>conception.md</code> détaillé, <code>requetes.js</code> (script mongosh exécutable)</td></tr>
+    <tr><td><code>lot2-panier-redis/</code></td><td><code>conception.md</code>, <code>commandes.redis</code>, <code>fusion_panier.lua</code> (Redis 4 ou plus)</td></tr>
+    <tr><td><code>lot3-logs-cassandra/</code></td><td><code>conception.md</code>, <code>schema.cql</code>, <code>requetes.cql</code></td></tr>
+    <tr><td><code>lot4-reco-neo4j/</code></td><td><code>conception.md</code>, <code>schema.cypher</code>, <code>requetes.cypher</code></td></tr>
+  </table>
+  <p class="small">Ce document est une synthèse. Chaque dossier de lot contient une version détaillée de la conception et des scripts exécutables avec jeux de données.</p>
+</section>
+
+<!-- ================================ PAGE 2 ================================ -->
+<section class="page gen">
+  <h2>4. Architecture globale</h2>
+  <pre class="mermaid archi">
+flowchart TB
+    U["👤 Clients web &amp; mobile"]
+    LB["⚖️ Load balancer — sans sticky session"]
+    BO["🛠️ Back-office LDLC"]
+
+    subgraph APP["Couche applicative — serveurs API / Web sans état (×N)"]
+        direction LR
+        API1["API 1"] ~~~ API2["API 2"] ~~~ APIN["API N"]
+    end
+
+    K{{"📨 Kafka — bus d'événements&lt;br/&gt;clics · vues · recherches · commandes validées"}}
+
+    R[("&lt;b&gt;Lot 2 — Redis&lt;/b&gt;&lt;br/&gt;Sessions &amp; paniers (noeviction)&lt;br/&gt;Cache produit (allkeys-lru)&lt;br/&gt;Sentinel 1P + 2R · &lt;b&gt;AP&lt;/b&gt;")]
+    M[("&lt;b&gt;Lot 1 — MongoDB&lt;/b&gt;&lt;br/&gt;Catalogue produits · stock&lt;br/&gt;Replica set ×3 · &lt;b&gt;CP&lt;/b&gt;")]
+    N[("&lt;b&gt;Lot 4 — Neo4j&lt;/b&gt;&lt;br/&gt;Graphe de recommandation&lt;br/&gt;Raft + read replicas · &lt;b&gt;CP&lt;/b&gt;")]
+    C[("&lt;b&gt;Lot 3 — Cassandra&lt;/b&gt;&lt;br/&gt;Logs · Compteurs · Commandes&lt;br/&gt;RF = 3 · &lt;b&gt;AP&lt;/b&gt;")]
+
+    J["⏱️ Jobs batch&lt;br/&gt;top produits et recherches (horaire)&lt;br/&gt;réconciliation BOUGHT_WITH (hebdo)"]
+
+    U --&gt; LB --&gt; APP
+    BO -- "édition fiches · w: majority" --&gt; M
+
+    APP -- "session, panier · &amp;lt; 1 ms" --&gt; R
+    APP -- "fiches : secondaryPreferred&lt;br/&gt;paiement : réservation du stock&lt;br/&gt;(primaire, décrément conditionnel)" --&gt; M
+    APP -- "recommandations&lt;br/&gt;lues sur réplicas" --&gt; N
+    APP -- "paiement : écriture commande&lt;br/&gt;(LOCAL_QUORUM)&lt;br/&gt;top produits, mes commandes" --&gt; C
+    APP -. "événements" .-&gt; K
+
+    M -. "change streams&lt;br/&gt;invalidation cache" .-&gt; R
+    M -. "change streams&lt;br/&gt;produits, standards" .-&gt; N
+    K -. "commandes validées&lt;br/&gt;+ BOUGHT_WITH incrémental" .-&gt; N
+    K -. "logs, compteurs&lt;br/&gt;(pré-agrégés)" .-&gt; C
+
+    J -. "BOUGHT_WITH" .-&gt; N
+    J -. "top_products" .-&gt; C
+
+    classDef redis fill:#fde8e8,stroke:#c0392b,color:#000
+    classDef mongo fill:#e6f4ea,stroke:#2e7d32,color:#000
+    classDef neo   fill:#e8eefc,stroke:#1a56db,color:#000
+    classDef cass  fill:#e3f3f8,stroke:#1b6f8c,color:#000
+    classDef infra fill:#f6f6f6,stroke:#777,color:#000
+    classDef bus   fill:#fff4dd,stroke:#c98a00,color:#000
+    class R redis
+    class M mongo
+    class N neo
+    class C cass
+    class U,LB,BO,API1,API2,APIN,J infra
+    class K bus
+    style APP  fill:#fafafa,stroke:#999
+  </pre>
+  <p class="small">Flèches pleines : appels synchrones pendant la requête de l'utilisateur. Flèches pointillées : flux asynchrones (événements, synchronisations, jobs).</p>
+
+  <div class="cols">
+    <div>
+      <h3>Composants transverses</h3>
+      <ul>
+        <li><b>Serveurs API sans état</b> : la session vit dans Redis, donc le load balancer n'a pas besoin de <i>sticky sessions</i> et on ajoute des serveurs lors des pics.</li>
+        <li><b>Kafka</b> : bus d'événements. Un clic est déposé dans la file en moins d'1 ms puis consommé à son rythme. Il absorbe les pics et alimente plusieurs consommateurs (Cassandra, Neo4j).</li>
+        <li><b>Change streams MongoDB</b> : propagent les modifications du catalogue vers Neo4j et invalident le cache Redis.</li>
+        <li><b>Jobs batch</b> : top produits et top recherches (toutes les heures) ; réconciliation hebdomadaire de <code>BOUGHT_WITH</code>, mis à jour sinon à chaque commande.</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Parcours d'une commande à travers les 4 bases</h3>
+      <table>
+        <tr><th>Étape</th><th>Base</th></tr>
+        <tr><td>Ajout au panier (<code>HINCRBY</code>)</td><td>Redis</td></tr>
+        <tr><td>Prix relu et <b>stock réservé</b> (décrément conditionnel, primaire)</td><td>MongoDB</td></tr>
+        <tr><td>Commande écrite <b>de façon synchrone</b> (<code>LOCAL_QUORUM</code>), puis confirmée</td><td>Cassandra</td></tr>
+        <tr><td>Publication « commande validée », suppression du panier</td><td>Kafka, Redis</td></tr>
+        <tr><td>Ajout au graphe, <code>BOUGHT_WITH</code> + 1 par paire</td><td>Neo4j</td></tr>
+      </table>
+    </div>
+  </div>
+  <p><b>Source de vérité :</b> MongoDB pour le catalogue et le stock, Cassandra pour les commandes. La commande est écrite avant d'être confirmée, donc le client la voit aussitôt sur « Mes commandes ». Si le paiement échoue, le stock est remis (compensation) ; les écritures sont idempotentes et peuvent être rejouées. Les copies (sku, nom et prix dans Neo4j, cache Redis) sont alimentées par événements et peuvent avoir quelques secondes de retard, sans impact métier.</p>
+</section>
+
+<!-- ================================ PAGE 3 ================================ -->
+<section class="lot1">
+  <h2>5. Lot 1 — Catalogue produits · MongoDB</h2>
+  <h3>Choix technologique</h3>
+  <p>Les fiches ont des structures très différentes selon la catégorie (un CPU a un socket et des cœurs, une souris des DPI, un logiciel une licence) et doivent évoluer <b>sans migration</b>. Le modèle document stocke chaque fiche avec ses propres champs, sans schéma imposé. La fiche, lue très souvent, est récupérée en <b>une seule lecture, sans jointure</b>. Le relationnel imposerait une table par catégorie ou un modèle EAV ; Redis ne permet pas de filtrer sur le contenu ; Cassandra demande de connaître toutes les requêtes à l'avance, ce qui convient mal à une navigation par filtres multiples.</p>
+  <p><b>CAP :</b> un replica set (3 nœuds, primaire unique) est <b>CP</b>. Nous réglons la cohérence par requête : <code>secondaryPreferred</code> pour l'affichage des fiches (quelques ms de retard acceptables, primaire soulagé lors des pics), <b>primaire + <code>readConcern: majority</code></b> pour le prix au paiement, <b>décrément conditionnel du stock</b> sur le primaire (Q7), <code>w: majority</code> pour les écritures. Avec 27 000 produits, le sharding n'est pas nécessaire.</p>
+
+  <h3>Schéma : collection <code>products</code> (extrait)</h3>
+<pre>{ _id, schemaVersion: 2, sku: "AMD-R7-7800X3D", slug: "amd-ryzen-7-7800x3d",
+  name: "AMD Ryzen 7 7800X3D", type: "cpu",                        // Polymorphic
+  category: { _id, name: "Processeurs", path: "composants/processeurs" }, // Extended Reference
+  brand:    { _id, name: "AMD" },
+  price: { amount: 389.95, currency: "EUR", promo: null },  stock: { quantity: 142, status: "in_stock" },
+  specs: { socket: "AM5", cores: 8, threads: 16, boostClockGHz: 5.0, tdpW: 120 }, // propre au type
+  attributes: [ { k: "socket", v: "AM5" }, { k: "cores", v: 8 }, { k: "tdp", v: 120, u: "W" } ], // Attribute
+  reviews: { count: 1284, sum: 6034, avg: 4.7,                       // Computed
+             recent: [ { _id, author, rating, title, createdAt } /* 5 max */ ] },  // Subset
+  compatible: [ { _id, sku: "ASUS-B650-PLUS", name: "ASUS TUF B650-Plus" } ] }</pre>
+  <p>Collections annexes : <code>categories</code>, <code>brands</code> et <code>reviews</code> (tous les avis, référencés par <code>productId</code>).</p>
+
+  <h3>Embedded vs References</h3>
+  <p>Règle appliquée : <b>on imbrique ce qui est lu avec la fiche et reste borné ; on référence ce qui croît sans limite ou vit indépendamment.</b></p>
+  <table>
+    <tr><th>Donnée</th><th>Choix</th><th>Justification</th></tr>
+    <tr><td><code>specs</code>, <code>price</code>, <code>stock</code>, <code>attributes</code></td><td>Embedded</td><td>Relation 1-1 ou liste bornée, toujours lue avec la fiche</td></tr>
+    <tr><td>Catégorie, marque</td><td>Extended Reference</td><td>Le nom est copié pour l'affichage sans <code>$lookup</code> ; <code>_id</code> garde la source de vérité. Ces noms changent très rarement</td></tr>
+    <tr><td>Avis clients</td><td>Subset + Reference</td><td>Des milliers d'avis feraient grossir le document sans limite (plafond de 16 Mo, lecture alourdie). On imbrique les 5 derniers ; le reste est paginé dans <code>reviews</code></td></tr>
+    <tr><td>Produits compatibles</td><td>Extended Reference</td><td>Liste courte pour l'affichage ; le <b>parcours</b> des compatibilités relève du Lot 4 (Neo4j)</td></tr>
+  </table>
+
+  <h3>Patterns utilisés</h3>
+  <table>
+    <tr><th>Pattern</th><th>Problème résolu</th></tr>
+    <tr><td><b>Polymorphic</b></td><td>Produits de natures différentes dans une seule collection, interrogeables ensemble (recherche, promotions)</td></tr>
+    <tr><td><b>Attribute</b></td><td>Un seul index <code>{"attributes.k":1,"attributes.v":1}</code> couvre tous les filtres, y compris ceux des futures catégories, au lieu d'un index par caractéristique</td></tr>
+    <tr><td><b>Extended Reference</b></td><td>Pas de jointure à l'affichage de la fiche</td></tr>
+    <tr><td><b>Subset</b></td><td>Document compact malgré un nombre d'avis illimité</td></tr>
+    <tr><td><b>Computed</b></td><td>Note moyenne calculée à l'écriture (rare) plutôt qu'à chaque lecture (fréquente)</td></tr>
+    <tr><td><b>Schema Versioning</b></td><td>Anciennes (v1) et nouvelles (v2) fiches cohabitent ; l'application lit les deux et met à niveau à la modification</td></tr>
+  </table>
+</section>
+
+<!-- ================================ PAGE 4 ================================ -->
+<section class="page lot1">
+  <h3>Requêtes types</h3>
+<pre>// Q1 — Fiche produit : 1 lecture, index unique sur slug
+db.products.findOne({ slug: "amd-ryzen-7-7800x3d" })
+
+// Q2 — CPU AM5 d'au moins 8 cœurs, du moins cher au plus cher (Attribute pattern)
+db.products.find({ "category.path": "composants/processeurs",
+  attributes: { $all: [ { $elemMatch: { k: "socket", v: "AM5" } },
+                        { $elemMatch: { k: "cores",  v: { $gte: 8 } } } ] }
+}).sort({ "price.amount": 1 })
+
+// Q3 — Nouvel attribut sans migration : les autres documents ne sont pas touchés
+db.products.updateOne({ sku: "AMD-R7-7800X3D" },
+  { $push: { attributes: { k: "pcie", v: "5.0" } }, $set: { "specs.pcieVersion": "5.0" } })
+
+// Q4 — Publier un avis : Subset + Computed en une écriture atomique sur le produit
+db.reviews.insertOne(review)
+db.products.updateOne({ _id: review.productId }, [
+  { $set: { "reviews.count": { $add: ["$reviews.count", 1] },
+            "reviews.sum":   { $add: ["$reviews.sum", review.rating] },
+            "reviews.recent": { $slice: [ { $concatArrays: [[resume], "$reviews.recent"] }, 5 ] } } },
+  { $set: { "reviews.avg": { $round: [ { $divide: ["$reviews.sum", "$reviews.count"] }, 1 ] } } } ])
+
+// Q5 — Avis paginés au-delà des 5 imbriqués
+db.reviews.find({ productId: id }).sort({ createdAt: -1 }).skip(5).limit(10)
+
+// Q6 — Analyse : note moyenne par marque dans une catégorie
+db.products.aggregate([ { $match: { "category.path": "composants/processeurs" } },
+  { $group: { _id: "$brand.name", produits: { $sum: 1 }, note: { $avg: "$reviews.avg" } } },
+  { $sort: { note: -1 } } ])
+
+// Q7 — Réserver le stock au paiement : filtre et décrément appliqués ensemble (atomique)
+db.products.updateOne({ sku: "AMD-R7-7800X3D", "stock.quantity": { $gte: 2 } },
+                      { $inc: { "stock.quantity": -2 } }, { writeConcern: { w: "majority" } })
+// modifiedCount = 0 -> rupture : la commande est refusée. Plusieurs produits : session.withTransaction()</pre>
+  <p class="small">Deux clients qui achètent la dernière unité en même temps ne peuvent pas réussir tous les deux. Dans le script <code>requetes.js</code>, cette requête est numérotée Q9.</p>
+
+  <h3>Index</h3>
+  <p><code>sku</code> et <code>slug</code> (uniques) · <code>{category.path, price.amount}</code> (listes filtrées par catégorie et triées par prix : Q2, Q6) · <code>brand._id</code> · <code>{attributes.k, attributes.v}</code> · index texte <code>name</code> + <code>description</code> (français) · <code>reviews : {productId, createdAt: -1}</code>.</p>
+
+  <h3>Compromis assumés</h3>
+  <table>
+    <tr><th>Compromis</th><th>Justification</th></tr>
+    <tr><td>Duplication des noms de marque et de catégorie</td><td>Un renommage demande un <code>updateMany</code> : opération rare, face à des millions de lectures économisées</td></tr>
+    <tr><td>Double écriture pour un avis (<code>reviews</code> + résumé dans <code>products</code>)</td><td>Transaction multi-documents si nécessaire, ou incohérence brève corrigée par un recalcul périodique</td></tr>
+    <tr><td>Attribute pattern moins lisible (<code>$elemMatch</code>, valeurs de types mixtes)</td><td>Le gain en indexation (un index pour tous les filtres) le justifie</td></tr>
+  </table>
+</section>
+
+<!-- ================================ PAGE 5 ================================ -->
+<section class="page lot2">
+  <h2>6. Lot 2 — Panier et sessions · Redis</h2>
+  <h3>Choix technologique</h3>
+  <p>Redis conserve les données <b>en RAM</b> avec des opérations en O(1) : un aller-retour prend environ 0,1 à 0,5 ms. Il gère <b>nativement le TTL</b> (suppression automatique, sans job de purge), et c'est un <b>service central</b> que tous les serveurs web interrogent, ce qui rend ces serveurs sans état. Ses commandes atomiques (<code>HINCRBY</code>) et ses scripts Lua gèrent les accès concurrents (double clic, plusieurs onglets). MongoDB serait trop lent (disque, TTL purgé environ toutes les 60 s) ; des sessions en mémoire locale ne seraient pas partagées. Volume : 200 000 visiteurs actifs en pic représentent moins de 200 Mo de RAM. Déploiement : <b>Sentinel</b> (1 primaire, 2 réplicas, bascule automatique), en <b>deux instances</b> : sessions et paniers en <code>noeviction</code> (jamais évincés pour faire de la place), cache produit en <code>allkeys-lru</code> (évinçable sans risque).</p>
+  <p><b>CAP : plutôt AP.</b> La réplication est asynchrone : lors d'une bascule, les dernières millisecondes d'écritures peuvent être perdues. Nuance : la bascule exige une majorité de sentinelles, donc un côté minoritaire perd l'écriture (pas de disponibilité totale) ; <code>min-replicas-to-write</code> limite les écritures perdues sur un primaire isolé. C'est acceptable, car perdre un « ajouter au panier » est une gêne mineure alors qu'un panier lent fait perdre des ventes. Surtout, <b>la commande validée ne vit jamais dans Redis</b> : au paiement, le stock est réservé dans MongoDB et la commande écrite dans Cassandra. Persistance : AOF <code>everysec</code> et RDB (au pire 1 s perdue).</p>
+
+  <h3>Modèle de données : clés, structures, TTL</h3>
+  <table>
+    <tr><th>Clé (<code>&lt;…&gt;</code> = valeur variable)</th><th>Structure</th><th>Contenu</th><th>TTL</th></tr>
+    <tr><td><code>session:&lt;sessionId&gt;</code></td><td>Hash</td><td>userId, createdAt, lastSeen, ip, ua, csrf</td><td><b>30 min glissant</b></td></tr>
+    <tr><td><code>cart:anon:&lt;sessionId&gt;</code></td><td>Hash</td><td>sku → quantité</td><td>7 jours</td></tr>
+    <tr><td><code>cart:user:&lt;userId&gt;</code></td><td>Hash</td><td>sku → quantité</td><td>30 jours</td></tr>
+    <tr><td><code>user:&lt;userId&gt;:sessions</code></td><td>Set</td><td>sessions ouvertes du client (les sessions expirées sont retirées à la lecture : <code>EXISTS</code> puis <code>SREM</code>)</td><td>30 jours</td></tr>
+    <tr><td><code>recent:&lt;sessionId&gt;</code></td><td>List bornée (10)</td><td>derniers produits consultés</td><td>7 jours</td></tr>
+    <tr><td><code>product:&lt;sku&gt;</code></td><td>Hash</td><td>cache name, price, stock (cache-aside devant MongoDB, instance cache)</td><td>5 min</td></tr>
+  </table>
+  <ul>
+    <li><b>Hash plutôt que JSON pour le panier</b> : <code>HINCRBY</code> modifie une ligne de façon atomique, donc deux ajouts simultanés donnent bien +2. Avec un JSON relu puis réécrit, on aurait une mise à jour perdue (<i>lost update</i>).</li>
+    <li><b>Le panier ne stocke pas les prix</b> : le prix vient toujours du catalogue, ce qui évite d'afficher un prix périmé pendant les 7 jours de vie du panier.</li>
+    <li><b>TTL glissant</b> : chaque action réarme le compteur (<code>EXPIRE</code> envoyé dans le même pipeline), ce qui traduit exactement « expiration après inactivité ».</li>
+    <li><b>Fusion à la connexion</b> : le panier anonyme est fusionné dans le panier du compte par un <b>script Lua</b>, exécuté de façon atomique par Redis.</li>
+  </ul>
+
+  <h3>Requêtes types (Redis 4 ou plus)</h3>
+<pre>HSET session:s-7f3a9c userId "" createdAt 1794945600 ip 82.64.12.34 csrf tk_91ab   # création de session
+EXPIRE session:s-7f3a9c 1800
+HGETALL session:s-7f3a9c ; EXPIRE session:s-7f3a9c 1800          # à chaque requête : lecture + TTL glissant
+HINCRBY cart:anon:s-7f3a9c AMD-R7-7800X3D 1 ; EXPIRE cart:anon:s-7f3a9c 604800   # ajout atomique au panier
+HGETALL cart:anon:s-7f3a9c        →  AMD-R7-7800X3D 2, ASUS-B650-PLUS 1          # affichage du panier
+HLEN cart:anon:s-7f3a9c           →  2                                           # badge de l'en-tête
+HDEL cart:anon:s-7f3a9c ASUS-B650-PLUS                                           # retrait d'un produit
+redis-cli --eval fusion_panier.lua cart:anon:s-7f3a9c cart:user:42 , 2592000    # fusion à la connexion
+LPUSH recent:s-7f3a9c AMD-R7-7800X3D ; LTRIM recent:s-7f3a9c 0 9                # historique borné à 10</pre>
+
+  <h3>Compromis assumés</h3>
+  <table>
+    <tr><th>Compromis</th><th>Justification</th></tr>
+    <tr><td>Perte possible de quelques ms d'écritures lors d'une bascule</td><td>Un panier n'est pas une commande ; la commande est rendue durable ailleurs</td></tr>
+    <tr><td>Volume limité par la RAM</td><td>Données petites et éphémères, nettoyées par les TTL</td></tr>
+    <tr><td>Pas de requête par contenu (« quels paniers contiennent X ? »)</td><td>Hors parcours d'achat ; l'analyse des paniers abandonnés passe par les événements (Lot 3)</td></tr>
+    <tr><td>Redis Cluster : scripts Lua limités à un seul slot</td><td><i>Hash tags</i> (ex. <code>cart:anon:{s-7f3a9c}</code>) ; la fusion anon → user passe alors côté application</td></tr>
+  </table>
+</section>
+
+<!-- ================================ PAGE 6 ================================ -->
+<section class="lot3">
+  <h2>7. Lot 3 — Logs et analytics · Cassandra</h2>
+  <h3>Choix technologique</h3>
+  <p>Cassandra écrit en <b>append-only</b> (commit log, memtable, SSTable), sans lecture préalable ni verrou : c'est l'un des moteurs les plus rapides en écriture. Son architecture <b>sans maître</b> (chaque nœud accepte les écritures) et sa <b>scalabilité linéaire</b> (on ajoute des nœuds à l'anneau) absorbent un volume qui croît pendant des années. Ses <b>clustering columns</b> trient les données sur disque, ce qui rend la lecture d'une période contiguë très efficace. MongoDB demanderait un sharding complexe à ce volume ; Redis est limité par la RAM. Contrepartie : pas de jointure, ni de <code>GROUP BY</code> libre, ni de tri sur une colonne quelconque. D'où une conception <b>Query-Driven : une table par requête</b>.</p>
+  <p><b>Hypothèses :</b> environ 20 millions d'événements par jour, dont 10 % à l'heure de pointe, environ 250 octets par événement, partitions visées sous 100 Mo.</p>
+  <p><b>CAP : AP, à cohérence réglable par requête</b> (facteur de réplication RF = 3). Logs : <code>LOCAL_ONE</code> en écriture et en lecture, pour le débit maximal. Commandes : <code>LOCAL_QUORUM</code> en écriture et en lecture, ce qui donne 2 + 2 &gt; 3, soit <b>R + W &gt; RF</b> : le client voit toujours sa dernière commande. Cette garantie suppose que la commande soit écrite <b>avant</b> d'être confirmée : l'API l'écrit donc de façon synchrone au paiement, sans passer par Kafka. <b>Convention :</b> <code>day</code>, <code>hour</code> et <code>month</code> sont calculés en UTC, comme <code>event_time</code>.</p>
+
+  <h3>Des requêtes aux tables</h3>
+  <table>
+    <tr><th>Requête métier</th><th>Table</th><th>Partition Key</th><th>Clustering Columns</th></tr>
+    <tr><td>Vues d'un produit aujourd'hui</td><td><code>product_views_by_day</code> (counter)</td><td><code>sku</code></td><td><code>day DESC</code></td></tr>
+    <tr><td>Top produits de la semaine</td><td><code>top_products_by_period</code> (pré-calculée)</td><td><code>(period_type, period)</code></td><td><code>rank ASC</code></td></tr>
+    <tr><td>Source du classement</td><td><code>daily_views_by_product</code> (counter)</td><td><code>(day, bucket)</code></td><td><code>sku</code></td></tr>
+    <tr><td>Historique des commandes d'un client</td><td><code>orders_by_customer</code></td><td><code>customer_id</code></td><td><code>order_date DESC, order_id</code></td></tr>
+    <tr><td>Parcours d'un visiteur</td><td><code>events_by_visitor</code></td><td><code>(visitor_id, month)</code></td><td><code>event_time DESC, event_id</code></td></tr>
+    <tr><td>Journal brut (archive, rejeu)</td><td><code>events_by_hour</code></td><td><code>(day, hour, bucket)</code></td><td><code>event_time DESC, event_id</code></td></tr>
+    <tr><td>Recherches du jour (top pré-calculé : <code>period_type = 'search_day'</code>)</td><td><code>search_terms_by_day</code> (counter)</td><td><code>(day, bucket)</code></td><td><code>term</code></td></tr>
+  </table>
+
+  <h3>Justification des clés</h3>
+  <ul>
+    <li><b>Journal brut <code>(day, hour, bucket)</code></b> : avec <code>day</code> seul, une partition pèserait 5 Go et concentrerait toutes les écritures du jour sur 3 nœuds (<i>hot spot</i>). Avec <code>hour</code>, on passe à 500 Mo à l'heure de pointe, ce qui reste trop. Avec un <code>bucket = hash(session_id) % 8</code>, on obtient environ 62 Mo, répartis sur le cluster. Le prix : lire une heure demande 8 requêtes parallèles, ce qui est acceptable pour une table d'archive.</li>
+    <li><b><code>event_id</code> (timeuuid)</b> en clustering : en Cassandra, un <code>INSERT</code> est un <i>upsert</i>. Sans cet identifiant, deux événements à la même milliseconde s'écraseraient.</li>
+    <li><b><code>(visitor_id, month)</code></b> : ce <i>time bucketing</i> borne la partition d'un visiteur très actif (ou d'un robot), qui grossirait sinon sans limite.</li>
+    <li><b>Compteur <code>product_views_by_day</code></b> : la réponse est pré-agrégée (1 ligne lue au lieu de milliers d'événements). Environ 365 lignes par produit et par an, et la même table sert la tendance sur 7 jours (tranche contiguë).</li>
+    <li><b>Compteurs du jour <code>(day, bucket)</code></b> : avec <code>day</code> seul, chaque vue (ou recherche) de la journée frapperait la même partition, soit le <i>hot spot</i> évité pour le journal brut. <code>bucket = hash(sku) % 8</code> (ou <code>hash(term)</code>) répartit les écritures ; le consommateur Kafka <b>pré-agrège</b> les incréments sur quelques secondes (<code>views + 37</code> plutôt que 37 × <code>+ 1</code>).</li>
+    <li><b>Top produits et recherches</b> : Cassandra <b>ne peut pas trier par la valeur d'un compteur</b>. Un job horaire lit les 7 jours × 8 buckets de <code>daily_views_by_product</code>, additionne, trie, puis écrit le top 100 dans une table où <b>le rang devient la clustering column</b> (même principe pour les recherches). Pour un top en temps réel, un Sorted Set Redis (<code>ZINCRBY</code>) serait l'extension naturelle.</li>
+    <li><b>Commandes</b> : les lignes sont imbriquées (<code>list&lt;frozen&lt;order_item&gt;&gt;</code>), avec le nom et le prix <b>figés à l'achat</b>, comme une facture. Écriture synchrone et idempotente (un <code>INSERT</code> rejoué réécrit la même ligne).</li>
+  </ul>
+</section>
+
+<!-- ================================ PAGE 7 ================================ -->
+<section class="page lot3">
+  <h3>Schéma CQL (extraits)</h3>
+<pre>CREATE TABLE events_by_hour (
+  day date, hour tinyint, bucket tinyint, event_time timestamp, event_id timeuuid,
+  event_type text, visitor_id text, session_id text, sku text, page text, search_query text, device text,
+  PRIMARY KEY ((day, hour, bucket), event_time, event_id)
+) WITH CLUSTERING ORDER BY (event_time DESC, event_id DESC)
+  AND default_time_to_live = 34128000                                      -- 13 mois
+  AND compaction = {'class': 'TimeWindowCompactionStrategy', 'compaction_window_unit': 'DAYS', 'compaction_window_size': 14};
+                                                          -- 395 / 14 ≈ 29 fenêtres (cible usuelle : 20 à 50)
+CREATE TABLE product_views_by_day ( sku text, day date, views counter,
+  PRIMARY KEY ((sku), day) ) WITH CLUSTERING ORDER BY (day DESC);
+
+CREATE TABLE daily_views_by_product ( day date, bucket tinyint, sku text, views counter,
+  PRIMARY KEY ((day, bucket), sku) );                     -- bucket = hash(sku) % 8
+
+CREATE TABLE top_products_by_period ( period_type text, period text, rank int, sku text, name text, views bigint,
+  computed_at timestamp, PRIMARY KEY ((period_type, period), rank) ) WITH CLUSTERING ORDER BY (rank ASC);
+
+CREATE TYPE order_item ( sku text, name text, quantity int, unit_price decimal );
+CREATE TABLE orders_by_customer ( customer_id text, order_date timestamp, order_id text, status text,
+  total decimal, shipping_city text, items list&lt;frozen&lt;order_item&gt;&gt;,
+  PRIMARY KEY ((customer_id), order_date, order_id) ) WITH CLUSTERING ORDER BY (order_date DESC, order_id ASC);</pre>
+
+  <h3>Requêtes types (chacune lit une seule partition)</h3>
+<pre>-- « Combien de vues pour ce produit aujourd'hui ? »
+SELECT views FROM product_views_by_day WHERE sku = 'AMD-R7-7800X3D' AND day = '2026-11-17';
+-- Tendance des 7 derniers jours (tranche de clustering)
+SELECT day, views FROM product_views_by_day WHERE sku = 'AMD-R7-7800X3D' AND day &gt;= '2026-11-11';
+-- « Top produits consultés cette semaine ? »
+SELECT rank, sku, name, views FROM top_products_by_period WHERE period_type = 'week' AND period = '2026-W47' LIMIT 10;
+-- « Historique des commandes d'un client » (déjà trié, la plus récente d'abord)
+SELECT order_date, order_id, status, total, items FROM orders_by_customer WHERE customer_id = 'U-42';
+-- Écriture d'une vue : incrément de compteur
+UPDATE product_views_by_day SET views = views + 1 WHERE sku = 'AMD-R7-7800X3D' AND day = '2026-11-17';</pre>
+
+  <h3>Écriture d'un clic et conservation</h3>
+  <p>Un clic sur une fiche entraîne <b>4 écritures</b> (journal brut, parcours du visiteur, 2 compteurs), envoyées <b>en asynchrone et en parallèle</b> par le consommateur Kafka. Nous n'utilisons pas de <code>BATCH</code> : un batch multi-partitions surcharge le coordinateur, et un batch ne peut pas mélanger compteurs et tables normales. La commande, elle, n'emprunte pas ce chemin : elle est écrite par l'API au paiement.</p>
+  <table>
+    <tr><th>Données</th><th>Rétention</th><th>Mécanisme</th></tr>
+    <tr><td>Événements bruts et parcours</td><td>13 mois (comparaison d'une année sur l'autre ; choix de minimisation, sous les 25 mois admis par la CNIL pour la mesure d'audience)</td><td>TTL + <b>TWCS</b> (fenêtres de 14 jours) : un fichier entier est supprimé quand sa fenêtre expire, sans réécriture</td></tr>
+    <tr><td>Compteurs</td><td>Plusieurs années (quelques Mo)</td><td>Les compteurs ne supportent pas le TTL : purge annuelle par un job</td></tr>
+    <tr><td>Commandes</td><td>10 ans (obligation comptable)</td><td>Pas de TTL</td></tr>
+  </table>
+
+  <h3>Compromis assumés</h3>
+  <table>
+    <tr><th>Compromis</th><th>Justification</th></tr>
+    <tr><td>Duplication : un événement est écrit dans 4 tables</td><td>Le disque coûte peu ; une lecture à une seule partition est ce qui permet de tenir la charge</td></tr>
+    <tr><td>Une nouvelle question demande une nouvelle table</td><td>Principe du Query-Driven ; le journal brut permet de reconstruire toute nouvelle vue</td></tr>
+    <tr><td>Compteurs non idempotents (un retry peut compter deux fois)</td><td>Erreur négligeable en analytique ; recalcul exact possible depuis le journal brut</td></tr>
+    <tr><td>Top produits avec jusqu'à 1 h de retard</td><td>Suffisant pour un bloc « tendances » ; Redis peut prendre le relais pour le temps réel</td></tr>
+    <tr><td>Buckets sur les compteurs du jour : le job lit 8 partitions au lieu d'1</td><td>Lecture rare (une fois par heure) contre des millions d'écritures réparties sur le cluster</td></tr>
+  </table>
+</section>
+
+<!-- ================================ PAGE 8 ================================ -->
+<section class="lot4">
+  <h2>8. Lot 4 — Recommandations · Neo4j</h2>
+  <h3>Choix technologique</h3>
+  <p>Les recommandations demandent de <b>parcourir des relations sur plusieurs sauts</b>. En relationnel, « ont aussi acheté » coûte 4 jointures sur des tables de millions de lignes, et le coût augmente à chaque saut. Neo4j stocke physiquement les relations (<b>index-free adjacency</b>) : suivre un lien coûte un saut de pointeur, <b>indépendamment de la taille de la base</b>. Cypher exprime les motifs de façon lisible. Neo4j ne remplace pas le catalogue : il ne stocke que l'identité des produits et leurs liens, alimentés par les change streams MongoDB et le flux des commandes.</p>
+  <p><b>CAP :</b> les primaires valident les écritures par consensus <b>Raft</b> (majorité), donc <b>CP</b>. Les recommandations sont lues sur les <b>read replicas</b>, à cohérence éventuelle : une recommandation calculée sur des données vieilles de quelques secondes reste pertinente.</p>
+
+  <h3>Modèle : nœuds, arêtes, propriétés</h3>
+  <div class="cols">
+    <div>
+      <table>
+        <tr><th>Nœud</th><th>Propriétés</th></tr>
+        <tr><td><code>Product</code></td><td>sku (unique), name, price, lengthMm, maxGpuLengthMm</td></tr>
+        <tr><td><code>Category</code> · <code>Brand</code> · <code>Range</code></td><td>name</td></tr>
+        <tr><td><code>Standard</code></td><td>code (AM5, DDR5, ATX…), kind (socket, mémoire, format)</td></tr>
+        <tr><td><code>Customer</code></td><td>id (pseudonymisé, RGPD)</td></tr>
+        <tr><td><code>Order</code></td><td>id, date</td></tr>
+      </table>
+    </div>
+    <div>
+      <table>
+        <tr><th>Arête</th><th>Sens</th></tr>
+        <tr><td><code>IN_CATEGORY</code> · <code>MADE_BY</code> · <code>IN_RANGE</code></td><td>Product → Category / Brand / Range</td></tr>
+        <tr><td><code>USES</code></td><td>Product <b>est</b> de ce standard</td></tr>
+        <tr><td><code>ACCEPTS</code></td><td>Product <b>accueille</b> ce standard (boîtier)</td></tr>
+        <tr><td><code>PLACED</code> · <code>CONTAINS {quantity}</code></td><td>Customer → Order → Product</td></tr>
+        <tr><td><code>BOUGHT_WITH {count}</code></td><td>Product — Product (matérialisée)</td></tr>
+      </table>
+    </div>
+  </div>
+<pre>(Customer)-[:PLACED]->(Order)-[:CONTAINS]->(Product)-[:IN_CATEGORY|MADE_BY|IN_RANGE]->(Category|Brand|Range)
+                                         (Product)-[:USES|ACCEPTS]->(Standard)
+                                         (Product)-[:BOUGHT_WITH {count}]-(Product)</pre>
+
+  <h3>Choix de modélisation</h3>
+  <ul>
+    <li><b>La compatibilité passe par des nœuds <code>Standard</code></b>. Des liens directs <code>COMPATIBLE_WITH</code> entre 50 CPU AM5 et 150 cartes mères AM5 demanderaient 7 500 relations. Avec un nœud <code>AM5</code>, il en faut <b>200</b>, et une nouvelle carte mère devient automatiquement compatible avec tous les CPU AM5. <code>USES</code> et <code>ACCEPTS</code> sont distincts parce que la compatibilité n'est pas symétrique : un boîtier ATX accueille aussi l'ITX. Les contraintes numériques (longueur du GPU) restent des propriétés comparées dans la requête.</li>
+    <li><b>Nœud <code>Order</code></b> : il distingue « acheté dans la même commande » (signal fort, une configuration complète) de « acheté par le même client » (signal plus faible). Le prix : un saut de plus.</li>
+    <li><b>Supernœuds et <code>BOUGHT_WITH</code></b> : un produit phare présent dans 50 000 commandes rendrait le calcul en direct trop coûteux à chaque affichage. Les co-achats sont matérialisés dans <code>BOUGHT_WITH {count}</code> ; la fiche n'a plus qu'un saut à faire. Pour ne pas déplacer le problème dans un recalcul complet, la relation est <b>incrémentée à l'ingestion de chaque commande</b> (quelques paires par commande, ingestion idempotente), avec une réconciliation hebdomadaire. C'est la même logique que le pattern Computed du Lot 1.</li>
+    <li><b>Graphe minimal</b> : pas de description, d'avis ni de données personnelles. Le graphe reste en mémoire et les parcours restent rapides.</li>
+  </ul>
+</section>
+
+<!-- ================================ PAGE 9 ================================ -->
+<section class="page lot4">
+  <h3>Requêtes types (résultats attendus sur le jeu de démonstration)</h3>
+<pre>// Q1 — « Les clients qui ont acheté ce processeur ont aussi acheté cette carte mère »
+MATCH (p:Product {sku: 'AMD-R7-7800X3D'})&lt;-[:CONTAINS]-(o:Order)-[:CONTAINS]-&gt;(autre:Product)
+      -[:IN_CATEGORY]-&gt;(:Category {name: 'Cartes mères'})
+RETURN autre.name, count(DISTINCT o) AS commandes_communes ORDER BY commandes_communes DESC LIMIT 5
+//  → ASUS TUF B650-Plus (2), MSI B650M Gaming Plus (1)
+
+// Q1 bis — En production : relation matérialisée, un seul saut
+MATCH (:Product {sku: 'AMD-R7-7800X3D'})-[r:BOUGHT_WITH]-(autre) RETURN autre.name, r.count ORDER BY r.count DESC LIMIT 5
+
+// Q2 — « Produits compatibles avec ce boîtier » : format accepté + longueur de GPU
+MATCH (b:Product {sku: 'CM-NR200P'})-[:ACCEPTS]-&gt;(:Standard {kind: 'format'})&lt;-[:USES]-(cm:Product)
+RETURN 'Carte mère' AS type, cm.name AS produit
+UNION
+MATCH (b:Product {sku: 'CM-NR200P'}), (gpu:Product)-[:IN_CATEGORY]-&gt;(:Category {name: 'Cartes graphiques'})
+WHERE gpu.lengthMm &lt;= b.maxGpuLengthMm RETURN 'Carte graphique' AS type, gpu.name AS produit
+//  → ASRock B650I (ITX), RTX 5070 (300 mm ≤ 336 mm) ; RTX 5090 (357 mm) exclue
+
+// Q3 — Configurateur : CPU → socket → carte mère → mémoire → RAM, et carte mère → format → boîtier (6 sauts)
+MATCH (:Product {sku: 'AMD-R7-7800X3D'})-[:USES]-&gt;(:Standard {kind: 'socket'})&lt;-[:USES]-(cm:Product)
+      -[:IN_CATEGORY]-&gt;(:Category {name: 'Cartes mères'})
+MATCH (cm)-[:USES]-&gt;(:Standard {kind: 'memoire'})&lt;-[:USES]-(ram:Product)-[:IN_CATEGORY]-&gt;(:Category {name: 'Mémoire'})
+MATCH (cm)-[:USES]-&gt;(f:Standard {kind: 'format'})&lt;-[:ACCEPTS]-(boitier:Product)
+RETURN cm.name, f.code, collect(DISTINCT ram.name), collect(DISTINCT boitier.name)
+
+// Q5 — Recommandations personnalisées (filtrage collaboratif, équivalent des « amis d'amis »)
+MATCH (moi:Customer {id: 'U-42'})-[:PLACED]-&gt;(:Order)-[:CONTAINS]-&gt;(:Product)
+      &lt;-[:CONTAINS]-(:Order)&lt;-[:PLACED]-(autre:Customer) WHERE autre &lt;&gt; moi
+MATCH (autre)-[:PLACED]-&gt;(:Order)-[:CONTAINS]-&gt;(reco:Product)
+WHERE NOT EXISTS { (moi)-[:PLACED]-&gt;(:Order)-[:CONTAINS]-&gt;(reco) }
+RETURN reco.name, count(DISTINCT autre) AS clients_similaires ORDER BY clients_similaires DESC LIMIT 5
+//  → ASUS TUF B650-Plus, Corsair DDR5 32 Go, RTX 5070 (2 clients chacun)
+
+// Q7 — Ingestion d'une commande (consommateur Kafka) : BOUGHT_WITH incrémental et idempotent
+WITH {id: 'CMD-7', customer: 'U-42', date: date('2026-11-18'), items: ['AMD-R7-7800X3D', 'ASUS-B650-PLUS']} AS o
+MERGE (c:Customer {id: o.customer}) WITH c, o WHERE NOT EXISTS { MATCH (:Order {id: o.id}) }
+CREATE (c)-[:PLACED]-&gt;(ord:Order {id: o.id, date: o.date})
+WITH ord, o UNWIND o.items AS sku MATCH (p:Product {sku: sku}) CREATE (ord)-[:CONTAINS {quantity: 1}]-&gt;(p)
+WITH collect(p) AS ps UNWIND ps AS pa UNWIND ps AS pb WITH pa, pb WHERE pa.sku &lt; pb.sku
+MERGE (pa)-[r:BOUGHT_WITH]-(pb) ON CREATE SET r.count = 1 ON MATCH SET r.count = r.count + 1
+//  → Ryzen 7 / ASUS B650-Plus passe de 2 à 3 ; rejouer l'événement ne change rien</pre>
+  <p>Le fichier <code>requetes.cypher</code> contient aussi Q4 « produits similaires » (score : même gamme +3, même marque +2, +1 par standard <b>technique</b> commun, socket ou mémoire, le format physique étant exclu ; prix à ±30 %) et Q6 « produits pivots » pour composer des packs.</p>
+
+  <h3>Compromis assumés</h3>
+  <table>
+    <tr><th>Compromis</th><th>Justification</th></tr>
+    <tr><td>Données dupliquées depuis MongoDB et le flux des commandes</td><td>Le graphe doit parcourir sans appel externe ; la synchronisation asynchrone suffit pour des recommandations</td></tr>
+    <tr><td><code>BOUGHT_WITH</code> dénormalisé : une écriture par paire à chaque commande</td><td>Quelques paires par commande, environ 25 000 commandes par jour : charge faible. Ingestion idempotente et réconciliation hebdomadaire</td></tr>
+    <tr><td>Écritures limitées aux primaires Raft (pas de sharding automatique)</td><td>Environ 25 000 commandes par jour : charge d'écriture modeste. La charge de lecture se répartit en ajoutant des read replicas</td></tr>
+    <tr><td>Compatibilité dépendante de la qualité des données (un standard oublié = un produit invisible)</td><td>Les standards sont saisis une seule fois dans le back-office du catalogue, puis propagés automatiquement</td></tr>
+  </table>
+</section>
+
+<!-- ================================ PAGE 10 ================================ -->
+<section class="page gen">
+  <h2>9. Compromis globaux et conclusion</h2>
+  <table>
+    <tr><th>Compromis</th><th>Justification</th></tr>
+    <tr><td><b>Quatre technologies à opérer</b> (compétences, supervision, sauvegardes)</td><td>Une base unique imposerait un compromis sur chaque besoin. Chaque brique existe en service managé (MongoDB Atlas, Redis Cloud, Astra DB, Neo4j Aura) pour réduire la charge d'exploitation</td></tr>
+    <tr><td><b>Données dupliquées entre bases</b> (sku, nom et prix dans MongoDB, Neo4j et Cassandra)</td><td>Chaque base répond seule, sans jointure inter-bases. Les sources de vérité sont clairement définies (MongoDB pour le catalogue et le stock, Cassandra pour les commandes) et les copies sont alimentées par événements</td></tr>
+    <tr><td><b>Cohérence éventuelle entre bases</b></td><td>Sans impact métier : les données critiques sont traitées de façon synchrone au paiement (prix relu et stock réservé sur le primaire MongoDB, commande écrite en <code>LOCAL_QUORUM</code>)</td></tr>
+    <tr><td><b>Pas de transaction entre MongoDB et Cassandra</b></td><td>Enchaînement ordonné avec compensation (stock remis si le paiement échoue) et écritures idempotentes, plutôt qu'une transaction distribuée coûteuse et fragile</td></tr>
+    <tr><td><b>Kafka ajoute un composant</b></td><td>Sans lui, chaque clic écrirait dans Cassandra pendant la requête, et un ralentissement de Cassandra ralentirait le site. Kafka découple, absorbe les pics et alimente plusieurs consommateurs</td></tr>
+  </table>
+
+  <h3>Récapitulatif des patterns et concepts mobilisés</h3>
+  <table>
+    <tr><th>Lot</th><th>Concepts</th></tr>
+    <tr><td>1 · MongoDB</td><td>Embedded vs References · Polymorphic · Attribute · Extended Reference · Subset · Computed · Schema Versioning · readPreference / readConcern / writeConcern</td></tr>
+    <tr><td>2 · Redis</td><td>Hash, Set, List · TTL glissant · atomicité (<code>HINCRBY</code>, Lua) · cache-aside · Sentinel · AOF / RDB · réplication asynchrone</td></tr>
+    <tr><td>3 · Cassandra</td><td>Query-Driven · Partition Key / Clustering Columns · bucketing temporel et par hash · compteurs · pré-agrégation · TTL + TWCS · cohérence réglable (R + W &gt; RF)</td></tr>
+    <tr><td>4 · Neo4j</td><td>Nœuds, arêtes, propriétés · index-free adjacency · nœuds intermédiaires (Standard, Order) · supernœuds et relation matérialisée · filtrage collaboratif · Raft + read replicas</td></tr>
+  </table>
+
+  <h3>Conclusion</h3>
+  <p>L'architecture proposée remplace la base monolithique par quatre bases spécialisées, chacune choisie pour la <b>forme de ses données et de ses requêtes</b> plutôt que par effet de mode. Le catalogue gagne la souplesse du modèle document, le panier la latence de la mémoire, l'analytique la puissance d'écriture d'un système distribué sans maître, et les recommandations l'expressivité du graphe.</p>
+  <p>Le fil conducteur est un <b>arbitrage CAP explicite, donnée par donnée</b> : la cohérence forte est réservée à ce qui engage financièrement LDLC (prix et stock, garantis par MongoDB ; commandes, lues et écrites en quorum dans Cassandra), et la disponibilité prime partout ailleurs. Les bases communiquent par événements (Kafka, change streams), ce qui permet à chacune d'évoluer et de passer à l'échelle indépendamment, notamment lors des pics de trafic liés aux sorties de composants.</p>
+  <p><b>Pistes d'évolution :</b> top produits en temps réel avec un Sorted Set Redis, sharding MongoDB si le catalogue s'élargit (marketplace), algorithmes de similarité Neo4j GDS (Node Similarity) pour affiner les recommandations.</p>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({ startOnLoad: true, theme: "default" });</script>
+</body>
+</html>

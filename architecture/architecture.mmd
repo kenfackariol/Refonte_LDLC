@@ -1,0 +1,49 @@
+flowchart TB
+    U["👤 Clients web & mobile"]
+    LB["⚖️ Load balancer — sans sticky session"]
+    BO["🛠️ Back-office LDLC"]
+
+    subgraph APP["Couche applicative — serveurs API / Web sans état (×N)"]
+        direction LR
+        API1["API 1"] ~~~ API2["API 2"] ~~~ APIN["API N"]
+    end
+
+    K{{"📨 Kafka — bus d'événements<br/>clics · vues · recherches · commandes validées"}}
+
+    R[("<b>Lot 2 — Redis</b><br/>Sessions & paniers (noeviction)<br/>Cache produit (allkeys-lru)<br/>Sentinel 1P + 2R · <b>AP</b>")]
+    M[("<b>Lot 1 — MongoDB</b><br/>Catalogue produits · stock<br/>Replica set ×3 · <b>CP</b>")]
+    N[("<b>Lot 4 — Neo4j</b><br/>Graphe de recommandation<br/>Raft + read replicas · <b>CP</b>")]
+    C[("<b>Lot 3 — Cassandra</b><br/>Logs · Compteurs · Commandes<br/>RF = 3 · <b>AP</b>")]
+
+    J["⏱️ Jobs batch<br/>top produits et recherches (horaire)<br/>réconciliation BOUGHT_WITH (hebdo)"]
+
+    U --> LB --> APP
+    BO -- "édition fiches · w: majority" --> M
+
+    APP -- "session, panier · &lt; 1 ms" --> R
+    APP -- "fiches : secondaryPreferred<br/>paiement : réservation du stock<br/>(primaire, décrément conditionnel)" --> M
+    APP -- "recommandations<br/>lues sur réplicas" --> N
+    APP -- "paiement : écriture commande<br/>(LOCAL_QUORUM)<br/>top produits, mes commandes" --> C
+    APP -. "événements" .-> K
+
+    M -. "change streams<br/>invalidation cache" .-> R
+    M -. "change streams<br/>produits, standards" .-> N
+    K -. "commandes validées<br/>+ BOUGHT_WITH incrémental" .-> N
+    K -. "logs, compteurs<br/>(pré-agrégés)" .-> C
+
+    J -. "BOUGHT_WITH" .-> N
+    J -. "top_products" .-> C
+
+    classDef redis fill:#fde8e8,stroke:#c0392b,color:#000
+    classDef mongo fill:#e6f4ea,stroke:#2e7d32,color:#000
+    classDef neo   fill:#e8eefc,stroke:#1a56db,color:#000
+    classDef cass  fill:#e3f3f8,stroke:#1b6f8c,color:#000
+    classDef infra fill:#f6f6f6,stroke:#777,color:#000
+    classDef bus   fill:#fff4dd,stroke:#c98a00,color:#000
+    class R redis
+    class M mongo
+    class N neo
+    class C cass
+    class U,LB,BO,API1,API2,APIN,J infra
+    class K bus
+    style APP  fill:#fafafa,stroke:#999

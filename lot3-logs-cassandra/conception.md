@@ -1,4 +1,4 @@
-# Lot 3 — Logs et Analytics (Cassandra)
+# Lot 3 : Logs et Analytics (Cassandra)
 
 ## 1. Choix technologique : Apache Cassandra (colonnes larges)
 
@@ -68,7 +68,7 @@ Le schéma complet est dans [`schema.cql`](schema.cql) et les requêtes dans [`r
 
 Une bonne partition est **ni trop petite** (sinon la requête doit en parcourir des milliers) **ni trop grosse** (au-delà d'environ 100 Mo, on a des *hot spots*, une compaction lente et des risques de timeout). Elle doit aussi **répartir la charge** sur tout le cluster.
 
-### T1 — `events_by_hour` : le journal brut
+### T1. `events_by_hour` : le journal brut
 
 ```sql
 PRIMARY KEY ((day, hour, bucket), event_time, event_id)
@@ -80,7 +80,7 @@ PRIMARY KEY ((day, hour, bucket), event_time, event_id)
 - **`event_id` (timeuuid)** garantit l'unicité si deux événements tombent à la même milliseconde. Sans lui, le second écraserait le premier : en Cassandra, un `INSERT` est un *upsert*.
 - **Compromis** : lire une heure complète demande **8 requêtes** (une par bucket), lancées en parallèle par l'application. Ce coût de lecture est faible, puisque cette table sert surtout aux jobs d'analyse et à l'archive, et il est largement compensé par la répartition des écritures.
 
-### T2 — `events_by_visitor` : le parcours d'un visiteur
+### T2. `events_by_visitor` : le parcours d'un visiteur
 
 ```sql
 PRIMARY KEY ((visitor_id, month), event_time, event_id)
@@ -88,7 +88,7 @@ PRIMARY KEY ((visitor_id, month), event_time, event_id)
 
 Si la partition était `visitor_id` seul, elle grossirait **sans limite** au fil des années (un client fidèle, un robot). Le découpage **par mois** la borne : c'est le *time bucketing*.
 
-### T3 — `product_views_by_day` : « combien de vues aujourd'hui ? »
+### T3. `product_views_by_day` : « combien de vues aujourd'hui ? »
 
 ```sql
 views counter,  PRIMARY KEY ((sku), day)  -- CLUSTERING ORDER BY (day DESC)
@@ -98,7 +98,7 @@ views counter,  PRIMARY KEY ((sku), day)  -- CLUSTERING ORDER BY (day DESC)
 - Partition = 1 produit, avec une ligne par jour, soit environ 365 lignes par an : très petite, même sur 10 ans.
 - Grâce à la clustering column `day`, la même table répond aussi à « vues des 7 derniers jours » (tranche contiguë).
 
-### T4 et T5 — le « top produits de la semaine »
+### T4 et T5 : le « top produits de la semaine »
 
 C'est le cas difficile : **Cassandra ne sait pas trier par la valeur d'un compteur**. Un `ORDER BY views` est impossible, car seules les clustering columns sont triables, et un compteur ne peut pas en être une.
 
@@ -111,7 +111,7 @@ C'est le cas difficile : **Cassandra ne sait pas trier par la valeur d'un compte
 
 **Compromis** : le classement a jusqu'à 1 heure de retard. C'est acceptable pour un bloc « tendances de la semaine ». Pour un top **en temps réel** (par exemple pendant le lancement d'une carte graphique), un **Sorted Set Redis** (`ZINCRBY`, `ZREVRANGE`) serait l'outil adapté. On peut le citer comme extension, là encore en persistance polyglotte.
 
-### T6 — `search_terms_by_day` : les recherches du jour
+### T6. `search_terms_by_day` : les recherches du jour
 
 ```sql
 searches counter,  PRIMARY KEY ((day, bucket), term)   -- bucket = hash(term) % 8
@@ -121,7 +121,7 @@ searches counter,  PRIMARY KEY ((day, bucket), term)   -- bucket = hash(term) % 
 - Le `bucket` répartit écritures et volume sur 8 partitions. Les termes sont **normalisés** avant écriture (minuscules, espaces et accents), ce qui regroupe les variantes.
 - Comme pour les produits, Cassandra ne trie pas sur le compteur. Le **même job horaire** calcule le top des recherches et l'écrit dans `top_products_by_period` avec `period_type = 'search_day'` : la lecture du classement reste à **une partition** (Q6).
 
-### T7 — `orders_by_customer` : historique des commandes
+### T7. `orders_by_customer` : historique des commandes
 
 ```sql
 PRIMARY KEY ((customer_id), order_date, order_id)  -- CLUSTERING ORDER BY (order_date DESC)
@@ -143,7 +143,7 @@ items list<frozen<order_item>>
 |---|---|---|
 | `events_by_hour`, `events_by_visitor` | **13 mois**, pour comparer une période à la même période de l'année précédente. C'est un choix de minimisation : la CNIL admet jusqu'à **25 mois** pour les données de mesure d'audience (les traceurs eux-mêmes étant limités à 13 mois) | `default_time_to_live = 34128000` |
 | Compteurs (T3, T4, T6) | Plusieurs années (quelques Mo seulement) | Les compteurs **ne supportent pas le TTL** : purge par un job annuel si nécessaire |
-| `top_products_by_period` | Illimitée (une centaine de lignes par période) | — |
+| `top_products_by_period` | Illimitée (une centaine de lignes par période) | aucun |
 | `orders_by_customer` | **10 ans** (obligation comptable) | Pas de TTL |
 
 **TimeWindowCompactionStrategy (TWCS)** sur les tables d'événements : les SSTables sont regroupées par fenêtre de temps. Quand toutes les données d'une fenêtre ont expiré, **le fichier entier est supprimé**, sans réécriture coûteuse. C'est la stratégie recommandée pour les séries temporelles avec TTL.

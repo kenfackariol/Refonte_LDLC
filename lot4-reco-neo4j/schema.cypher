@@ -1,5 +1,5 @@
 // =====================================================================
-// Lot 4 — Recommandations produits (Neo4j 5)
+// Lot 4 : Recommandations produits (Neo4j 5)
 // Exécution : cypher-shell -f schema.cypher   (ou copier dans Neo4j Browser)
 // =====================================================================
 

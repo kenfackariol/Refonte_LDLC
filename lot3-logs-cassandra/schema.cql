@@ -1,5 +1,5 @@
 -- =====================================================================
--- Lot 3 — Logs et Analytics (Cassandra)
+-- Lot 3 : Logs et Analytics (Cassandra)
 -- Exécution : cqlsh -f schema.cql
 -- =====================================================================
 

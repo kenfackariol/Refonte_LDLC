@@ -1,5 +1,5 @@
 -- =====================================================================
--- Lot 3 — Données d'exemple et requêtes types
+-- Lot 3 : Données d'exemple et requêtes types
 -- Exécution : cqlsh -f schema.cql  puis  cqlsh -f requetes.cql
 -- Convention : day, hour et month sont calculés en UTC, comme event_time.
 -- =====================================================================

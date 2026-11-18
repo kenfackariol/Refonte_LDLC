@@ -1,4 +1,4 @@
-// Lot 1 — Catalogue produits (MongoDB)
+// Lot 1 : Catalogue produits (MongoDB)
 // Exécution : mongosh "mongodb://localhost:27017" requetes.js
 
 db = db.getSiblingDB("ldlc_catalogue");

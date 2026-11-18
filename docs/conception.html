@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<title>Refonte LDLC — Document de conception NoSQL</title>
+<title>Refonte LDLC : Document de conception NoSQL</title>
 <style>
   @page { size: A4; margin: 12mm 13mm 12mm 13mm; }
   * { box-sizing: border-box; }
@@ -36,7 +36,7 @@
 
 <!-- ================================ PAGE 1 ================================ -->
 <section class="page gen">
-  <h1>Refonte LDLC — Architecture de données NoSQL</h1>
+  <h1>Refonte LDLC : Architecture de données NoSQL</h1>
   <div class="cover-meta">
     Projet NSL NoSQL · Document de conception<br>
     Binôme : <b>Ariol Kenfack</b> et <b>Raphael Deutou</b> · Novembre 2026<br>
@@ -81,20 +81,20 @@
   <pre class="mermaid archi">
 flowchart TB
     U["👤 Clients web &amp; mobile"]
-    LB["⚖️ Load balancer — sans sticky session"]
+    LB["⚖️ Load balancer : sans sticky session"]
     BO["🛠️ Back-office LDLC"]
 
-    subgraph APP["Couche applicative — serveurs API / Web sans état (×N)"]
+    subgraph APP["Couche applicative : serveurs API / Web sans état (×N)"]
         direction LR
         API1["API 1"] ~~~ API2["API 2"] ~~~ APIN["API N"]
     end
 
-    K{{"📨 Kafka — bus d'événements&lt;br/&gt;clics · vues · recherches · commandes validées"}}
+    K{{"📨 Kafka : bus d'événements&lt;br/&gt;clics · vues · recherches · commandes validées"}}
 
-    R[("&lt;b&gt;Lot 2 — Redis&lt;/b&gt;&lt;br/&gt;Sessions &amp; paniers (noeviction)&lt;br/&gt;Cache produit (allkeys-lru)&lt;br/&gt;Sentinel 1P + 2R · &lt;b&gt;AP&lt;/b&gt;")]
-    M[("&lt;b&gt;Lot 1 — MongoDB&lt;/b&gt;&lt;br/&gt;Catalogue produits · stock&lt;br/&gt;Replica set ×3 · &lt;b&gt;CP&lt;/b&gt;")]
-    N[("&lt;b&gt;Lot 4 — Neo4j&lt;/b&gt;&lt;br/&gt;Graphe de recommandation&lt;br/&gt;Raft + read replicas · &lt;b&gt;CP&lt;/b&gt;")]
-    C[("&lt;b&gt;Lot 3 — Cassandra&lt;/b&gt;&lt;br/&gt;Logs · Compteurs · Commandes&lt;br/&gt;RF = 3 · &lt;b&gt;AP&lt;/b&gt;")]
+    R[("&lt;b&gt;Lot 2 : Redis&lt;/b&gt;&lt;br/&gt;Sessions &amp; paniers (noeviction)&lt;br/&gt;Cache produit (allkeys-lru)&lt;br/&gt;Sentinel 1P + 2R · &lt;b&gt;AP&lt;/b&gt;")]
+    M[("&lt;b&gt;Lot 1 : MongoDB&lt;/b&gt;&lt;br/&gt;Catalogue produits · stock&lt;br/&gt;Replica set ×3 · &lt;b&gt;CP&lt;/b&gt;")]
+    N[("&lt;b&gt;Lot 4 : Neo4j&lt;/b&gt;&lt;br/&gt;Graphe de recommandation&lt;br/&gt;Raft + read replicas · &lt;b&gt;CP&lt;/b&gt;")]
+    C[("&lt;b&gt;Lot 3 : Cassandra&lt;/b&gt;&lt;br/&gt;Logs · Compteurs · Commandes&lt;br/&gt;RF = 3 · &lt;b&gt;AP&lt;/b&gt;")]
 
     J["⏱️ Jobs batch&lt;br/&gt;top produits et recherches (horaire)&lt;br/&gt;réconciliation BOUGHT_WITH (hebdo)"]
 
@@ -158,7 +158,7 @@ flowchart TB
 
 <!-- ================================ PAGE 3 ================================ -->
 <section class="lot1">
-  <h2>5. Lot 1 — Catalogue produits · MongoDB</h2>
+  <h2>5. Lot 1 : Catalogue produits · MongoDB</h2>
   <h3>Choix technologique</h3>
   <p>Les fiches ont des structures très différentes selon la catégorie (un CPU a un socket et des cœurs, une souris des DPI, un logiciel une licence) et doivent évoluer <b>sans migration</b>. Le modèle document stocke chaque fiche avec ses propres champs, sans schéma imposé. La fiche, lue très souvent, est récupérée en <b>une seule lecture, sans jointure</b>. Le relationnel imposerait une table par catégorie ou un modèle EAV ; Redis ne permet pas de filtrer sur le contenu ; Cassandra demande de connaître toutes les requêtes à l'avance, ce qui convient mal à une navigation par filtres multiples.</p>
   <p><b>CAP :</b> un replica set (3 nœuds, primaire unique) est <b>CP</b>. Nous réglons la cohérence par requête : <code>secondaryPreferred</code> pour l'affichage des fiches (quelques ms de retard acceptables, primaire soulagé lors des pics), <b>primaire + <code>readConcern: majority</code></b> pour le prix au paiement, <b>décrément conditionnel du stock</b> sur le primaire (Q7), <code>w: majority</code> pour les écritures. Avec 27 000 produits, le sharding n'est pas nécessaire.</p>
@@ -201,20 +201,20 @@ flowchart TB
 <!-- ================================ PAGE 4 ================================ -->
 <section class="page lot1">
   <h3>Requêtes types</h3>
-<pre>// Q1 — Fiche produit : 1 lecture, index unique sur slug
+<pre>// Q1. Fiche produit : 1 lecture, index unique sur slug
 db.products.findOne({ slug: "amd-ryzen-7-7800x3d" })
 
-// Q2 — CPU AM5 d'au moins 8 cœurs, du moins cher au plus cher (Attribute pattern)
+// Q2. CPU AM5 d'au moins 8 cœurs, du moins cher au plus cher (Attribute pattern)
 db.products.find({ "category.path": "composants/processeurs",
   attributes: { $all: [ { $elemMatch: { k: "socket", v: "AM5" } },
                         { $elemMatch: { k: "cores",  v: { $gte: 8 } } } ] }
 }).sort({ "price.amount": 1 })
 
-// Q3 — Nouvel attribut sans migration : les autres documents ne sont pas touchés
+// Q3. Nouvel attribut sans migration : les autres documents ne sont pas touchés
 db.products.updateOne({ sku: "AMD-R7-7800X3D" },
   { $push: { attributes: { k: "pcie", v: "5.0" } }, $set: { "specs.pcieVersion": "5.0" } })
 
-// Q4 — Publier un avis : Subset + Computed en une écriture atomique sur le produit
+// Q4. Publier un avis : Subset + Computed en une écriture atomique sur le produit
 db.reviews.insertOne(review)
 db.products.updateOne({ _id: review.productId }, [
   { $set: { "reviews.count": { $add: ["$reviews.count", 1] },
@@ -222,15 +222,15 @@ db.products.updateOne({ _id: review.productId }, [
             "reviews.recent": { $slice: [ { $concatArrays: [[resume], "$reviews.recent"] }, 5 ] } } },
   { $set: { "reviews.avg": { $round: [ { $divide: ["$reviews.sum", "$reviews.count"] }, 1 ] } } } ])
 
-// Q5 — Avis paginés au-delà des 5 imbriqués
+// Q5. Avis paginés au-delà des 5 imbriqués
 db.reviews.find({ productId: id }).sort({ createdAt: -1 }).skip(5).limit(10)
 
-// Q6 — Analyse : note moyenne par marque dans une catégorie
+// Q6. Analyse : note moyenne par marque dans une catégorie
 db.products.aggregate([ { $match: { "category.path": "composants/processeurs" } },
   { $group: { _id: "$brand.name", produits: { $sum: 1 }, note: { $avg: "$reviews.avg" } } },
   { $sort: { note: -1 } } ])
 
-// Q7 — Réserver le stock au paiement : filtre et décrément appliqués ensemble (atomique)
+// Q7. Réserver le stock au paiement : filtre et décrément appliqués ensemble (atomique)
 db.products.updateOne({ sku: "AMD-R7-7800X3D", "stock.quantity": { $gte: 2 } },
                       { $inc: { "stock.quantity": -2 } }, { writeConcern: { w: "majority" } })
 // modifiedCount = 0 -> rupture : la commande est refusée. Plusieurs produits : session.withTransaction()</pre>
@@ -250,7 +250,7 @@ db.products.updateOne({ sku: "AMD-R7-7800X3D", "stock.quantity": { $gte: 2 } },
 
 <!-- ================================ PAGE 5 ================================ -->
 <section class="page lot2">
-  <h2>6. Lot 2 — Panier et sessions · Redis</h2>
+  <h2>6. Lot 2 : Panier et sessions · Redis</h2>
   <h3>Choix technologique</h3>
   <p>Redis conserve les données <b>en RAM</b> avec des opérations en O(1) : un aller-retour prend environ 0,1 à 0,5 ms. Il gère <b>nativement le TTL</b> (suppression automatique, sans job de purge), et c'est un <b>service central</b> que tous les serveurs web interrogent, ce qui rend ces serveurs sans état. Ses commandes atomiques (<code>HINCRBY</code>) et ses scripts Lua gèrent les accès concurrents (double clic, plusieurs onglets). MongoDB serait trop lent (disque, TTL purgé environ toutes les 60 s) ; des sessions en mémoire locale ne seraient pas partagées. Volume : 200 000 visiteurs actifs en pic représentent moins de 200 Mo de RAM. Déploiement : <b>Sentinel</b> (1 primaire, 2 réplicas, bascule automatique), en <b>deux instances</b> : sessions et paniers en <code>noeviction</code> (jamais évincés pour faire de la place), cache produit en <code>allkeys-lru</code> (évinçable sans risque).</p>
   <p><b>CAP : plutôt AP.</b> La réplication est asynchrone : lors d'une bascule, les dernières millisecondes d'écritures peuvent être perdues. Nuance : la bascule exige une majorité de sentinelles, donc un côté minoritaire perd l'écriture (pas de disponibilité totale) ; <code>min-replicas-to-write</code> limite les écritures perdues sur un primaire isolé. C'est acceptable, car perdre un « ajouter au panier » est une gêne mineure alors qu'un panier lent fait perdre des ventes. Surtout, <b>la commande validée ne vit jamais dans Redis</b> : au paiement, le stock est réservé dans MongoDB et la commande écrite dans Cassandra. Persistance : AOF <code>everysec</code> et RDB (au pire 1 s perdue).</p>
@@ -295,7 +295,7 @@ LPUSH recent:s-7f3a9c AMD-R7-7800X3D ; LTRIM recent:s-7f3a9c 0 9                
 
 <!-- ================================ PAGE 6 ================================ -->
 <section class="lot3">
-  <h2>7. Lot 3 — Logs et analytics · Cassandra</h2>
+  <h2>7. Lot 3 : Logs et analytics · Cassandra</h2>
   <h3>Choix technologique</h3>
   <p>Cassandra écrit en <b>append-only</b> (commit log, memtable, SSTable), sans lecture préalable ni verrou : c'est l'un des moteurs les plus rapides en écriture. Son architecture <b>sans maître</b> (chaque nœud accepte les écritures) et sa <b>scalabilité linéaire</b> (on ajoute des nœuds à l'anneau) absorbent un volume qui croît pendant des années. Ses <b>clustering columns</b> trient les données sur disque, ce qui rend la lecture d'une période contiguë très efficace. MongoDB demanderait un sharding complexe à ce volume ; Redis est limité par la RAM. Contrepartie : pas de jointure, ni de <code>GROUP BY</code> libre, ni de tri sur une colonne quelconque. D'où une conception <b>Query-Driven : une table par requête</b>.</p>
   <p><b>Hypothèses :</b> environ 20 millions d'événements par jour, dont 10 % à l'heure de pointe, environ 250 octets par événement, partitions visées sous 100 Mo.</p>
@@ -384,7 +384,7 @@ UPDATE product_views_by_day SET views = views + 1 WHERE sku = 'AMD-R7-7800X3D' A
 
 <!-- ================================ PAGE 8 ================================ -->
 <section class="lot4">
-  <h2>8. Lot 4 — Recommandations · Neo4j</h2>
+  <h2>8. Lot 4 : Recommandations · Neo4j</h2>
   <h3>Choix technologique</h3>
   <p>Les recommandations demandent de <b>parcourir des relations sur plusieurs sauts</b>. En relationnel, « ont aussi acheté » coûte 4 jointures sur des tables de millions de lignes, et le coût augmente à chaque saut. Neo4j stocke physiquement les relations (<b>index-free adjacency</b>) : suivre un lien coûte un saut de pointeur, <b>indépendamment de la taille de la base</b>. Cypher exprime les motifs de façon lisible. Neo4j ne remplace pas le catalogue : il ne stocke que l'identité des produits et leurs liens, alimentés par les change streams MongoDB et le flux des commandes.</p>
   <p><b>CAP :</b> les primaires valident les écritures par consensus <b>Raft</b> (majorité), donc <b>CP</b>. Les recommandations sont lues sur les <b>read replicas</b>, à cohérence éventuelle : une recommandation calculée sur des données vieilles de quelques secondes reste pertinente.</p>
@@ -408,7 +408,7 @@ UPDATE product_views_by_day SET views = views + 1 WHERE sku = 'AMD-R7-7800X3D' A
         <tr><td><code>USES</code></td><td>Product <b>est</b> de ce standard</td></tr>
         <tr><td><code>ACCEPTS</code></td><td>Product <b>accueille</b> ce standard (boîtier)</td></tr>
         <tr><td><code>PLACED</code> · <code>CONTAINS {quantity}</code></td><td>Customer → Order → Product</td></tr>
-        <tr><td><code>BOUGHT_WITH {count}</code></td><td>Product — Product (matérialisée)</td></tr>
+        <tr><td><code>BOUGHT_WITH {count}</code></td><td>Product ↔ Product (matérialisée)</td></tr>
       </table>
     </div>
   </div>
@@ -428,16 +428,16 @@ UPDATE product_views_by_day SET views = views + 1 WHERE sku = 'AMD-R7-7800X3D' A
 <!-- ================================ PAGE 9 ================================ -->
 <section class="page lot4">
   <h3>Requêtes types (résultats attendus sur le jeu de démonstration)</h3>
-<pre>// Q1 — « Les clients qui ont acheté ce processeur ont aussi acheté cette carte mère »
+<pre>// Q1. « Les clients qui ont acheté ce processeur ont aussi acheté cette carte mère »
 MATCH (p:Product {sku: 'AMD-R7-7800X3D'})&lt;-[:CONTAINS]-(o:Order)-[:CONTAINS]-&gt;(autre:Product)
       -[:IN_CATEGORY]-&gt;(:Category {name: 'Cartes mères'})
 RETURN autre.name, count(DISTINCT o) AS commandes_communes ORDER BY commandes_communes DESC LIMIT 5
 //  → ASUS TUF B650-Plus (2), MSI B650M Gaming Plus (1)
 
-// Q1 bis — En production : relation matérialisée, un seul saut
+// Q1 bis. En production : relation matérialisée, un seul saut
 MATCH (:Product {sku: 'AMD-R7-7800X3D'})-[r:BOUGHT_WITH]-(autre) RETURN autre.name, r.count ORDER BY r.count DESC LIMIT 5
 
-// Q2 — « Produits compatibles avec ce boîtier » : format accepté + longueur de GPU
+// Q2. « Produits compatibles avec ce boîtier » : format accepté + longueur de GPU
 MATCH (b:Product {sku: 'CM-NR200P'})-[:ACCEPTS]-&gt;(:Standard {kind: 'format'})&lt;-[:USES]-(cm:Product)
 RETURN 'Carte mère' AS type, cm.name AS produit
 UNION
@@ -445,14 +445,14 @@ MATCH (b:Product {sku: 'CM-NR200P'}), (gpu:Product)-[:IN_CATEGORY]-&gt;(:Categor
 WHERE gpu.lengthMm &lt;= b.maxGpuLengthMm RETURN 'Carte graphique' AS type, gpu.name AS produit
 //  → ASRock B650I (ITX), RTX 5070 (300 mm ≤ 336 mm) ; RTX 5090 (357 mm) exclue
 
-// Q3 — Configurateur : CPU → socket → carte mère → mémoire → RAM, et carte mère → format → boîtier (6 sauts)
+// Q3. Configurateur : CPU → socket → carte mère → mémoire → RAM, et carte mère → format → boîtier (6 sauts)
 MATCH (:Product {sku: 'AMD-R7-7800X3D'})-[:USES]-&gt;(:Standard {kind: 'socket'})&lt;-[:USES]-(cm:Product)
       -[:IN_CATEGORY]-&gt;(:Category {name: 'Cartes mères'})
 MATCH (cm)-[:USES]-&gt;(:Standard {kind: 'memoire'})&lt;-[:USES]-(ram:Product)-[:IN_CATEGORY]-&gt;(:Category {name: 'Mémoire'})
 MATCH (cm)-[:USES]-&gt;(f:Standard {kind: 'format'})&lt;-[:ACCEPTS]-(boitier:Product)
 RETURN cm.name, f.code, collect(DISTINCT ram.name), collect(DISTINCT boitier.name)
 
-// Q5 — Recommandations personnalisées (filtrage collaboratif, équivalent des « amis d'amis »)
+// Q5. Recommandations personnalisées (filtrage collaboratif, équivalent des « amis d'amis »)
 MATCH (moi:Customer {id: 'U-42'})-[:PLACED]-&gt;(:Order)-[:CONTAINS]-&gt;(:Product)
       &lt;-[:CONTAINS]-(:Order)&lt;-[:PLACED]-(autre:Customer) WHERE autre &lt;&gt; moi
 MATCH (autre)-[:PLACED]-&gt;(:Order)-[:CONTAINS]-&gt;(reco:Product)
@@ -460,7 +460,7 @@ WHERE NOT EXISTS { (moi)-[:PLACED]-&gt;(:Order)-[:CONTAINS]-&gt;(reco) }
 RETURN reco.name, count(DISTINCT autre) AS clients_similaires ORDER BY clients_similaires DESC LIMIT 5
 //  → ASUS TUF B650-Plus, Corsair DDR5 32 Go, RTX 5070 (2 clients chacun)
 
-// Q7 — Ingestion d'une commande (consommateur Kafka) : BOUGHT_WITH incrémental et idempotent
+// Q7. Ingestion d'une commande (consommateur Kafka) : BOUGHT_WITH incrémental et idempotent
 WITH {id: 'CMD-7', customer: 'U-42', date: date('2026-11-18'), items: ['AMD-R7-7800X3D', 'ASUS-B650-PLUS']} AS o
 MERGE (c:Customer {id: o.customer}) WITH c, o WHERE NOT EXISTS { MATCH (:Order {id: o.id}) }
 CREATE (c)-[:PLACED]-&gt;(ord:Order {id: o.id, date: o.date})

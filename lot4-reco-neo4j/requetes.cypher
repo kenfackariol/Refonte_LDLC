@@ -1,5 +1,5 @@
 // =====================================================================
-// Lot 4 — Requêtes types de recommandation (Neo4j 5)
+// Lot 4 : Requêtes types de recommandation (Neo4j 5)
 // Prérequis : avoir exécuté schema.cypher
 // =====================================================================
 

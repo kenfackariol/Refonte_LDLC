@@ -1,11 +1,11 @@
-ECHO "Lot 2 — Panier et sessions (Redis)"
+ECHO "Lot 2 : Panier et sessions (Redis)"
 ECHO "Exécution : redis-cli < commandes.redis   (Redis 4 ou plus)"
 ECHO "(la fusion de paniers se lance à part : voir fusion_panier.lua)"
 ECHO "ATTENTION : FLUSHDB vide la base courante, à lancer sur une base de test"
 
 FLUSHDB
 
-ECHO "1. SESSION — création à la première visite (TTL 30 min glissant)"
+ECHO "1. SESSION : création à la première visite (TTL 30 min glissant)"
 HSET session:s-7f3a9c userId "" createdAt 1794945600 lastSeen 1794945600 ip 82.64.12.34 ua "Mozilla/5.0" csrf "tk_91ab"
 EXPIRE session:s-7f3a9c 1800
 
@@ -15,7 +15,7 @@ HSET session:s-7f3a9c lastSeen 1794945720
 EXPIRE session:s-7f3a9c 1800
 TTL session:s-7f3a9c
 
-ECHO "2. PANIER ANONYME — Hash sku -> quantité (TTL 7 jours)"
+ECHO "2. PANIER ANONYME : Hash sku -> quantité (TTL 7 jours)"
 ECHO "Ajout au panier : HINCRBY est atomique (deux clics simultanés = +2, pas de perte)"
 HINCRBY cart:anon:s-7f3a9c AMD-R7-7800X3D 1
 HINCRBY cart:anon:s-7f3a9c ASUS-B650-PLUS 1
@@ -33,7 +33,7 @@ HINCRBY cart:anon:s-7f3a9c ASUS-B650-PLUS -1
 HDEL cart:anon:s-7f3a9c ASUS-B650-PLUS
 HINCRBY cart:anon:s-7f3a9c ASUS-B650-PLUS 1
 
-ECHO "3. PRODUITS CONSULTÉS RÉCEMMENT — List bornée à 10"
+ECHO "3. PRODUITS CONSULTÉS RÉCEMMENT : List bornée à 10"
 LPUSH recent:s-7f3a9c AMD-R7-7800X3D
 LPUSH recent:s-7f3a9c LOGI-GPRO-X2
 LPUSH recent:s-7f3a9c ASUS-B650-PLUS

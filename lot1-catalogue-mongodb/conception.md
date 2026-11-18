@@ -1,4 +1,4 @@
-# Lot 1 — Catalogue Produits (MongoDB)
+# Lot 1 : Catalogue Produits (MongoDB)
 
 ## 1. Choix technologique : MongoDB (base orientée document)
 
@@ -178,13 +178,13 @@ L'index composé porte sur `category.path` parce que c'est le champ filtré par 
 
 Le script exécutable se trouve dans [`requetes.js`](requetes.js).
 
-**Q1 — Afficher une fiche produit (requête la plus fréquente)**
+**Q1. Afficher une fiche produit (requête la plus fréquente)**
 ```js
 db.products.findOne({ slug: "amd-ryzen-7-7800x3d" })
 ```
 Une seule lecture, sans jointure, sur l'index `slug`.
 
-**Q2 — Lister les CPU AM5 de plus de 8 cœurs, du moins cher au plus cher**
+**Q2. Lister les CPU AM5 de plus de 8 cœurs, du moins cher au plus cher**
 ```js
 db.products.find({
   "category.path": "composants/processeurs",
@@ -195,7 +195,7 @@ db.products.find({
 }).sort({ "price.amount": 1 })
 ```
 
-**Q3 — Ajouter un attribut sans migration** (nouvelle norme, par exemple la compatibilité PCIe 5.0)
+**Q3. Ajouter un attribut sans migration** (nouvelle norme, par exemple la compatibilité PCIe 5.0)
 ```js
 db.products.updateOne(
   { sku: "AMD-R7-7800X3D" },
@@ -204,7 +204,7 @@ db.products.updateOne(
 ```
 Les autres documents ne sont pas touchés.
 
-**Q4 — Publier un avis (Subset + Computed en une écriture atomique sur le produit)**
+**Q4. Publier un avis (Subset + Computed en une écriture atomique sur le produit)**
 ```js
 db.reviews.insertOne(review)
 db.products.updateOne({ _id: review.productId }, [
@@ -217,12 +217,12 @@ db.products.updateOne({ _id: review.productId }, [
 ])
 ```
 
-**Q5 — Avis paginés d'un produit (au-delà des 5 imbriqués)**
+**Q5. Avis paginés d'un produit (au-delà des 5 imbriqués)**
 ```js
 db.reviews.find({ productId: id }).sort({ createdAt: -1 }).skip(5).limit(10)
 ```
 
-**Q6 — Analyse : note moyenne et nombre de produits par marque, pour une catégorie**
+**Q6. Analyse : note moyenne et nombre de produits par marque, pour une catégorie**
 ```js
 db.products.aggregate([
   { $match: { "category.path": "composants/processeurs" } },
@@ -231,7 +231,7 @@ db.products.aggregate([
 ])
 ```
 
-**Q9 — Réserver le stock au paiement (décrément conditionnel, atomique)**
+**Q9. Réserver le stock au paiement (décrément conditionnel, atomique)**
 ```js
 const session = db.getMongo().startSession();
 session.withTransaction(() => {

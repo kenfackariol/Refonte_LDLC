@@ -1,22 +1,22 @@
-# Architecture globale — Refonte LDLC
+# Architecture globale : Refonte LDLC
 
 ```mermaid
 flowchart TB
     U["👤 Clients web & mobile"]
-    LB["⚖️ Load balancer — sans sticky session"]
+    LB["⚖️ Load balancer : sans sticky session"]
     BO["🛠️ Back-office LDLC"]
 
-    subgraph APP["Couche applicative — serveurs API / Web sans état (×N)"]
+    subgraph APP["Couche applicative : serveurs API / Web sans état (×N)"]
         direction LR
         API1["API 1"] ~~~ API2["API 2"] ~~~ APIN["API N"]
     end
 
-    K{{"📨 Kafka — bus d'événements<br/>clics · vues · recherches · commandes validées"}}
+    K{{"📨 Kafka : bus d'événements<br/>clics · vues · recherches · commandes validées"}}
 
-    R[("<b>Lot 2 — Redis</b><br/>Sessions & paniers (noeviction)<br/>Cache produit (allkeys-lru)<br/>Sentinel 1P + 2R · <b>AP</b>")]
-    M[("<b>Lot 1 — MongoDB</b><br/>Catalogue produits · stock<br/>Replica set ×3 · <b>CP</b>")]
-    N[("<b>Lot 4 — Neo4j</b><br/>Graphe de recommandation<br/>Raft + read replicas · <b>CP</b>")]
-    C[("<b>Lot 3 — Cassandra</b><br/>Logs · Compteurs · Commandes<br/>RF = 3 · <b>AP</b>")]
+    R[("<b>Lot 2 : Redis</b><br/>Sessions & paniers (noeviction)<br/>Cache produit (allkeys-lru)<br/>Sentinel 1P + 2R · <b>AP</b>")]
+    M[("<b>Lot 1 : MongoDB</b><br/>Catalogue produits · stock<br/>Replica set ×3 · <b>CP</b>")]
+    N[("<b>Lot 4 : Neo4j</b><br/>Graphe de recommandation<br/>Raft + read replicas · <b>CP</b>")]
+    C[("<b>Lot 3 : Cassandra</b><br/>Logs · Compteurs · Commandes<br/>RF = 3 · <b>AP</b>")]
 
     J["⏱️ Jobs batch<br/>top produits et recherches (horaire)<br/>réconciliation BOUGHT_WITH (hebdo)"]
 

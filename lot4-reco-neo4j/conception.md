@@ -1,4 +1,4 @@
-# Lot 4 — Recommandations Produits (Neo4j)
+# Lot 4 : Recommandations Produits (Neo4j)
 
 ## 1. Choix technologique : Neo4j (base orientée graphe)
 
@@ -60,12 +60,12 @@ Les **secondaires** (*read replicas*) sont mis à jour de façon **asynchrone**,
 
 | Relation | Propriétés | Signification |
 |---|---|---|
-| `(Product)-[:IN_CATEGORY]->(Category)` | — | Appartenance à une catégorie |
-| `(Product)-[:MADE_BY]->(Brand)` | — | Marque |
-| `(Product)-[:IN_RANGE]->(Range)` | — | Gamme |
-| `(Product)-[:USES]->(Standard)` | — | Le produit **est** de ce standard (CPU AM5, carte mère ATX) |
-| `(Product)-[:ACCEPTS]->(Standard)` | — | Le produit **accueille** ce standard (boîtier qui accepte l'ATX et l'ITX) |
-| `(Customer)-[:PLACED]->(Order)` | — | Le client a passé la commande |
+| `(Product)-[:IN_CATEGORY]->(Category)` | aucune | Appartenance à une catégorie |
+| `(Product)-[:MADE_BY]->(Brand)` | aucune | Marque |
+| `(Product)-[:IN_RANGE]->(Range)` | aucune | Gamme |
+| `(Product)-[:USES]->(Standard)` | aucune | Le produit **est** de ce standard (CPU AM5, carte mère ATX) |
+| `(Product)-[:ACCEPTS]->(Standard)` | aucune | Le produit **accueille** ce standard (boîtier qui accepte l'ATX et l'ITX) |
+| `(Customer)-[:PLACED]->(Order)` | aucune | Le client a passé la commande |
 | `(Order)-[:CONTAINS]->(Product)` | `quantity` | Ligne de commande |
 | `(Product)-[:BOUGHT_WITH]-(Product)` | `count`, `updatedAt` | **Relation matérialisée** : nombre de commandes contenant les deux produits |
 
@@ -135,7 +135,7 @@ Ni description, ni avis, ni données personnelles des clients : seulement des id
 
 Le jeu de données est dans [`schema.cypher`](schema.cypher) et les requêtes dans [`requetes.cypher`](requetes.cypher). Le résultat attendu est indiqué sous chaque requête.
 
-**Q1 — « Les clients qui ont acheté ce processeur ont aussi acheté cette carte mère »**
+**Q1. « Les clients qui ont acheté ce processeur ont aussi acheté cette carte mère »**
 ```cypher
 MATCH (p:Product {sku: 'AMD-R7-7800X3D'})<-[:CONTAINS]-(o:Order)-[:CONTAINS]->(autre:Product)
       -[:IN_CATEGORY]->(:Category {name: 'Cartes mères'})
@@ -144,13 +144,13 @@ ORDER BY commandes_communes DESC LIMIT 5
 ```
 Résultat : ASUS TUF B650-Plus (2 commandes), MSI B650M (1).
 
-**Q1 bis — Même question en production, via la relation matérialisée**
+**Q1 bis. Même question en production, via la relation matérialisée**
 ```cypher
 MATCH (p:Product {sku: 'AMD-R7-7800X3D'})-[r:BOUGHT_WITH]-(autre:Product)
 RETURN autre.name, r.count ORDER BY r.count DESC LIMIT 5
 ```
 
-**Q2 — « Produits compatibles avec ce boîtier »**
+**Q2. « Produits compatibles avec ce boîtier »**
 ```cypher
 MATCH (boitier:Product {sku: 'CM-NR200P'})-[:ACCEPTS]->(f:Standard {kind: 'format'})<-[:USES]-(cm:Product)
 RETURN 'Carte mère' AS type, cm.name AS produit
@@ -161,7 +161,7 @@ RETURN 'Carte graphique' AS type, gpu.name AS produit
 ```
 Résultat : ASRock B650I (ITX) et RTX 5070 (300 mm ≤ 336 mm). La RTX 5090, avec ses 357 mm, est exclue.
 
-**Q3 — Configurateur : parcours CPU → carte mère → mémoire → boîtier**
+**Q3. Configurateur : parcours CPU → carte mère → mémoire → boîtier**
 ```cypher
 MATCH (cpu:Product {sku: 'AMD-R7-7800X3D'})-[:USES]->(:Standard {kind: 'socket'})
       <-[:USES]-(cm:Product)-[:IN_CATEGORY]->(:Category {name: 'Cartes mères'})
@@ -171,13 +171,13 @@ RETURN cm.name, fmt.code, collect(DISTINCT ram.name), collect(DISTINCT boitier.n
 ```
 C'est l'équivalent produit des « amis d'amis » : on parcourt **6 sauts** en une seule requête, ce qui serait très coûteux en SQL.
 
-**Q4 — Produits similaires avec un score** (même gamme = 3, même marque = 2, +1 par standard technique commun, prix à ±30 %)
+**Q4. Produits similaires avec un score** (même gamme = 3, même marque = 2, +1 par standard technique commun, prix à ±30 %)
 
 Seuls les standards **techniques** (socket, mémoire) comptent. Le **format** physique (ATX, ITX…) est exclu : deux cartes mères ATX, l'une AMD et l'autre Intel, ne sont pas similaires pour un client.
 
 Résultat pour l'ASUS B650-Plus : MSI B650M (AM5 + DDR5 : score 2), ASRock B650I (2), Gigabyte Z890 (DDR5 seulement : score 1).
 
-**Q5 — Recommandations personnalisées (filtrage collaboratif)**
+**Q5. Recommandations personnalisées (filtrage collaboratif)**
 ```cypher
 MATCH (moi:Customer {id: 'U-42'})-[:PLACED]->(:Order)-[:CONTAINS]->(p:Product)
       <-[:CONTAINS]-(:Order)<-[:PLACED]-(autre:Customer)
@@ -189,9 +189,9 @@ ORDER BY clients_similaires DESC LIMIT 5
 ```
 U-42 vient d'acheter un 7800X3D. Les 3 autres acheteurs de ce processeur ont pris l'ASUS B650-Plus, la DDR5 Corsair et la RTX 5070 (2 clients chacun) : ce sont les recommandations.
 
-**Q6 — Produits « pivots » pour composer des packs** (merchandising) : classement par nombre total de co-achats.
+**Q6. Produits « pivots » pour composer des packs** (merchandising) : classement par nombre total de co-achats.
 
-**Q7 — Ingestion d'une commande et mise à jour incrémentale de `BOUGHT_WITH`** (consommateur Kafka)
+**Q7. Ingestion d'une commande et mise à jour incrémentale de `BOUGHT_WITH`** (consommateur Kafka)
 ```cypher
 WITH {id: 'CMD-7', customer: 'U-42', date: date('2026-11-18'),
       items: ['AMD-R7-7800X3D', 'ASUS-B650-PLUS']} AS o

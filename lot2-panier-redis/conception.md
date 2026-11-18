@@ -1,4 +1,4 @@
-# Lot 2 — Panier et Sessions Utilisateurs (Redis)
+# Lot 2 : Panier et Sessions Utilisateurs (Redis)
 
 ## 1. Choix technologique : Redis (clé-valeur en mémoire)
 
@@ -113,57 +113,57 @@ La fusion `anon → user` impliquant deux identifiants différents, elle serait 
 
 Le script complet se trouve dans [`commandes.redis`](commandes.redis) (`redis-cli < commandes.redis`). Il demande **Redis 4 ou plus** (`HSET` avec plusieurs champs) et commence par `FLUSHDB` : à lancer sur une base de test uniquement.
 
-**Q1 — Créer une session à la première visite**
+**Q1. Créer une session à la première visite**
 ```
 HSET session:s-7f3a9c userId "" createdAt 1794945600 lastSeen 1794945600 ip 82.64.12.34 csrf tk_91ab
 EXPIRE session:s-7f3a9c 1800
 ```
 
-**Q2 — Lire la session à chaque requête et prolonger son TTL**
+**Q2. Lire la session à chaque requête et prolonger son TTL**
 ```
 HGETALL session:s-7f3a9c
 EXPIRE  session:s-7f3a9c 1800
 ```
 
-**Q3 — Ajouter un produit au panier (atomique)**
+**Q3. Ajouter un produit au panier (atomique)**
 ```
 HINCRBY cart:anon:s-7f3a9c AMD-R7-7800X3D 1
 EXPIRE  cart:anon:s-7f3a9c 604800
 ```
 
-**Q4 — Afficher le panier et le badge de l'en-tête**
+**Q4. Afficher le panier et le badge de l'en-tête**
 ```
 HGETALL cart:anon:s-7f3a9c      → AMD-R7-7800X3D 2, ASUS-B650-PLUS 1
 HLEN    cart:anon:s-7f3a9c      → 2
 ```
 
-**Q5 — Modifier une quantité / retirer un produit**
+**Q5. Modifier une quantité / retirer un produit**
 ```
 HSET cart:anon:s-7f3a9c AMD-R7-7800X3D 1
 HDEL cart:anon:s-7f3a9c ASUS-B650-PLUS
 ```
 
-**Q6 — Connexion : fusionner le panier anonyme dans le panier du client**
+**Q6. Connexion : fusionner le panier anonyme dans le panier du client**
 ```
 redis-cli --eval fusion_panier.lua cart:anon:s-7f3a9c cart:user:42 , 2592000
 ```
 Résultat obtenu au test : `AMD-R7-7800X3D 2, LOGI-GPRO-X2 1, ASUS-B650-PLUS 1`. Les quantités communes sont additionnées et le panier anonyme est supprimé.
 
-**Q7 — Produits consultés récemment**
+**Q7. Produits consultés récemment**
 ```
 LPUSH  recent:s-7f3a9c AMD-R7-7800X3D
 LTRIM  recent:s-7f3a9c 0 9
 LRANGE recent:s-7f3a9c 0 -1
 ```
 
-**Q8 — Cache produit (cache-aside devant MongoDB)**
+**Q8. Cache produit (cache-aside devant MongoDB)**
 ```
 HMGET product:AMD-R7-7800X3D name price     → si vide : lecture MongoDB, puis
 HSET  product:AMD-R7-7800X3D name "AMD Ryzen 7 7800X3D" price 389.95 stock 142
 EXPIRE product:AMD-R7-7800X3D 300
 ```
 
-**Q9 — Lister les sessions actives d'un client (avec nettoyage) et les déconnecter**
+**Q9. Lister les sessions actives d'un client (avec nettoyage) et les déconnecter**
 ```
 SMEMBERS user:42:sessions        → pour chaque id :
 EXISTS   session:<id>            →   0 : SREM user:42:sessions <id>   (session expirée)

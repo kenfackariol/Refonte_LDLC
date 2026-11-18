@@ -1,0 +1,645 @@
+<mxfile host="app.diagrams.net" pages="5">
+  <diagram id="arch" name="1. Architecture globale">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1500" pageHeight="1000" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="arch-1" value="Refonte LDLC : Architecture NoSQL polyglotte" style="text;html=1;align=left;verticalAlign=middle;fontSize=20;fontStyle=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="40" y="10" width="1500" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="arch-2" value="👤 &lt;b&gt;Clients web &amp;amp; mobile&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f6f6f6;strokeColor=#777777;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="620" y="70" width="220" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="arch-3" value="⚖️ &lt;b&gt;Load balancer&lt;/b&gt;&lt;br&gt;sans sticky session" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f6f6f6;strokeColor=#777777;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="620" y="140" width="220" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="arch-4" value="&lt;b&gt;Serveurs API / Web sans état (×N)&lt;/b&gt;&lt;br&gt;la session est dans Redis : n&#39;importe quel serveur traite n&#39;importe quelle requête" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f6f6f6;strokeColor=#777777;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="520" y="220" width="420" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="arch-5" value="🛠️ &lt;b&gt;Back-office LDLC&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f6f6f6;strokeColor=#777777;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="60" y="330" width="180" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="arch-6" value="📨 &lt;b&gt;Kafka&lt;/b&gt; : bus d&#39;événements&lt;br&gt;clics · vues · recherches · commandes validées" style="shape=hexagon;perimeter=hexagonPerimeter2;whiteSpace=wrap;html=1;size=0.1;fillColor=#fff4dd;strokeColor=#c98a00;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="600" y="380" width="260" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="arch-7" value="⏱️ &lt;b&gt;Jobs batch&lt;/b&gt;&lt;br&gt;top produits et recherches (horaire)&lt;br&gt;réconciliation BOUGHT_WITH (hebdo)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f6f6f6;strokeColor=#777777;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1110" y="380" width="260" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="arch-8" value="&lt;b&gt;Lot 1 : MongoDB&lt;/b&gt;&lt;br&gt;Catalogue · stock&lt;br&gt;Replica set ×3 · &lt;b&gt;CP&lt;/b&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=12;fillColor=#e6f4ea;strokeColor=#2e7d32;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="300" y="560" width="200" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="arch-9" value="&lt;b&gt;Lot 2 : Redis&lt;/b&gt;&lt;br&gt;Sessions &amp;amp; paniers (noeviction)&lt;br&gt;Cache produit (allkeys-lru)&lt;br&gt;Sentinel 1P + 2R · &lt;b&gt;AP&lt;/b&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=12;fillColor=#fde8e8;strokeColor=#c0392b;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="40" y="560" width="220" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="arch-10" value="&lt;b&gt;Lot 4 : Neo4j&lt;/b&gt;&lt;br&gt;Graphe de recommandation&lt;br&gt;Raft + read replicas · &lt;b&gt;CP&lt;/b&gt;" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=12;fillColor=#e8eefc;strokeColor=#1a56db;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="640" y="620" width="200" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="arch-11" value="&lt;b&gt;Lot 3 : Cassandra&lt;/b&gt;&lt;br&gt;Logs · compteurs · commandes&lt;br&gt;RF = 3 · &lt;b&gt;AP&lt;/b&gt; (quorum pour les commandes)" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=12;fillColor=#e3f3f8;strokeColor=#1b6f8c;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="980" y="560" width="230" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="arch-12" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=11;labelBackgroundColor=#ffffff;endArrow=block;endFill=1;" edge="1" parent="1" source="arch-2" target="arch-3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="arch-13" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=11;labelBackgroundColor=#ffffff;endArrow=block;endFill=1;" edge="1" parent="1" source="arch-3" target="arch-4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="arch-14" value="édition des fiches&lt;br&gt;w: majority" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=11;labelBackgroundColor=#ffffff;endArrow=block;endFill=1;" edge="1" parent="1" source="arch-5" target="arch-8">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="arch-15" value="session, panier&lt;br&gt;&amp;lt; 1 ms" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=11;labelBackgroundColor=#ffffff;endArrow=block;endFill=1;" edge="1" parent="1" source="arch-4" target="arch-9">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="150" y="250" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arch-16" value="fiches : secondaryPreferred&lt;br&gt;paiement : réservation du stock&lt;br&gt;(primaire, décrément conditionnel)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=11;labelBackgroundColor=#ffffff;endArrow=block;endFill=1;" edge="1" parent="1" source="arch-4" target="arch-8">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="400" y="300" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arch-17" value="recommandations&lt;br&gt;(read replicas)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=11;labelBackgroundColor=#ffffff;endArrow=block;endFill=1;" edge="1" parent="1" source="arch-4" target="arch-10">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="900" y="330" />
+              <mxPoint x="900" y="560" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arch-18" value="paiement : écriture commande (LOCAL_QUORUM)&lt;br&gt;tendances, mes commandes" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=11;labelBackgroundColor=#ffffff;endArrow=block;endFill=1;" edge="1" parent="1" source="arch-4" target="arch-11">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1095" y="250" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arch-19" value="événements" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=11;labelBackgroundColor=#ffffff;endArrow=block;endFill=1;dashed=1;" edge="1" parent="1" source="arch-4" target="arch-6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="arch-20" value="change streams&lt;br&gt;invalidation cache" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=11;labelBackgroundColor=#ffffff;endArrow=block;endFill=1;dashed=1;" edge="1" parent="1" source="arch-8" target="arch-9">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="arch-21" value="change streams&lt;br&gt;produits, standards" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=11;labelBackgroundColor=#ffffff;endArrow=block;endFill=1;dashed=1;" edge="1" parent="1" source="arch-8" target="arch-10">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="400" y="760" />
+              <mxPoint x="740" y="760" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arch-22" value="commandes validées&lt;br&gt;+ BOUGHT_WITH incrémental" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=11;labelBackgroundColor=#ffffff;endArrow=block;endFill=1;dashed=1;" edge="1" parent="1" source="arch-6" target="arch-10">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="arch-23" value="logs, compteurs&lt;br&gt;(pré-agrégés)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=11;labelBackgroundColor=#ffffff;endArrow=block;endFill=1;dashed=1;" edge="1" parent="1" source="arch-6" target="arch-11">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1000" y="415" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arch-24" value="top_products_by_period" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=11;labelBackgroundColor=#ffffff;endArrow=block;endFill=1;dashed=1;" edge="1" parent="1" source="arch-7" target="arch-11">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="arch-25" value="réconciliation" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=11;labelBackgroundColor=#ffffff;endArrow=block;endFill=1;dashed=1;" edge="1" parent="1" source="arch-7" target="arch-10">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1300" y="800" />
+              <mxPoint x="740" y="800" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arch-26" value="&lt;b&gt;Légende&lt;/b&gt;&lt;br&gt;━━ flèche pleine : appel synchrone (pendant la requête)&lt;br&gt;┅┅ flèche pointillée : flux asynchrone (événements, jobs)&lt;br&gt;&lt;br&gt;&lt;b&gt;Règle CAP&lt;/b&gt; : CP là où une erreur coûte de l&#39;argent (prix, stock),&lt;br&gt;AP là où l&#39;indisponibilité coûte plus cher qu&#39;un léger retard (panier, clics)." style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=8;fillColor=#fffbe6;strokeColor=#b59b00;fontSize=11;arcSize=6;" vertex="1" parent="1">
+          <mxGeometry x="40" y="830" width="520" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="arch-27" value="&lt;b&gt;Parcours d&#39;un paiement&lt;/b&gt;&lt;br&gt;1. Redis : lecture du panier&lt;br&gt;2. MongoDB : prix relu + &lt;b&gt;stock réservé&lt;/b&gt; (updateOne si stock ≥ qté, $inc négatif)&lt;br&gt;3. Cassandra : commande écrite &lt;b&gt;de façon synchrone&lt;/b&gt; (LOCAL_QUORUM), puis confirmée&lt;br&gt;4. Kafka : « commande validée » ; Redis : suppression du panier&lt;br&gt;5. Neo4j : Order + CONTAINS, BOUGHT_WITH + 1 par paire&lt;br&gt;Échec du paiement → stock remis (compensation). Écritures idempotentes." style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=8;fillColor=#fffbe6;strokeColor=#b59b00;fontSize=11;arcSize=6;" vertex="1" parent="1">
+          <mxGeometry x="600" y="830" width="560" height="130" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="mongo" name="2. Lot 1: MongoDB">
+    <mxGraphModel grid="1" page="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" pageScale="1" pageWidth="1500" pageHeight="1000" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="mongo-1" parent="1" style="text;html=1;align=left;verticalAlign=middle;fontSize=20;fontStyle=1;strokeColor=none;fillColor=none;" value="Lot 1: Catalogue produits · MongoDB (modèle document)" vertex="1">
+          <mxGeometry height="40" width="1500" x="40" y="10" as="geometry" />
+        </mxCell>
+        <mxCell id="mongo-2" parent="1" style="swimlane;fontStyle=0;html=1;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeLast=0;collapsible=0;marginBottom=0;fillColor=#e6f4ea;strokeColor=#2e7d32;fontSize=12;swimlaneFillColor=#ffffff;" value="&lt;b&gt;products&lt;/b&gt; &amp;nbsp;&lt;i&gt;(~27 000 documents, lus très souvent)&lt;/i&gt;" vertex="1">
+          <mxGeometry height="338" width="520" x="40" y="70" as="geometry" />
+        </mxCell>
+        <mxCell id="mongo-3" parent="mongo-2" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="_id : ObjectId" vertex="1">
+          <mxGeometry height="22" width="520" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="mongo-4" parent="mongo-2" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="schemaVersion : 2 &amp;nbsp;&lt;i&gt;‹Schema Versioning›&lt;/i&gt;" vertex="1">
+          <mxGeometry height="22" width="520" y="52" as="geometry" />
+        </mxCell>
+        <mxCell id="mongo-5" parent="mongo-2" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="sku : string &lt;b&gt;(unique)&lt;/b&gt; · slug : string &lt;b&gt;(unique)&lt;/b&gt;" vertex="1">
+          <mxGeometry height="22" width="520" y="74" as="geometry" />
+        </mxCell>
+        <mxCell id="mongo-6" parent="mongo-2" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="name, description : string" vertex="1">
+          <mxGeometry height="22" width="520" y="96" as="geometry" />
+        </mxCell>
+        <mxCell id="mongo-7" parent="mongo-2" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="type : &#39;cpu&#39; | &#39;motherboard&#39; | &#39;mouse&#39; … &amp;nbsp;&lt;i&gt;‹Polymorphic›&lt;/i&gt;" vertex="1">
+          <mxGeometry height="22" width="520" y="118" as="geometry" />
+        </mxCell>
+        <mxCell id="mongo-8" parent="mongo-2" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;fontColor=#2e7d32;" value="category : { _id, name, path } &amp;nbsp;&lt;i&gt;‹Extended Reference›&lt;/i&gt;" vertex="1">
+          <mxGeometry height="22" width="520" y="140" as="geometry" />
+        </mxCell>
+        <mxCell id="mongo-9" parent="mongo-2" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;fontColor=#2e7d32;" value="brand : { _id, name } &amp;nbsp;&lt;i&gt;‹Extended Reference›&lt;/i&gt;" vertex="1">
+          <mxGeometry height="22" width="520" y="162" as="geometry" />
+        </mxCell>
+        <mxCell id="mongo-10" parent="mongo-2" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="price : { amount, currency, promo } &amp;nbsp;&lt;i&gt;‹Embedded›&lt;/i&gt;" vertex="1">
+          <mxGeometry height="22" width="520" y="184" as="geometry" />
+        </mxCell>
+        <mxCell id="mongo-11" parent="mongo-2" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="stock : { quantity, status } &amp;nbsp;&lt;i&gt;‹Embedded›&lt;/i&gt;" vertex="1">
+          <mxGeometry height="22" width="520" y="206" as="geometry" />
+        </mxCell>
+        <mxCell id="mongo-12" parent="mongo-2" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="specs : { … } : champs propres au type &amp;nbsp;&lt;i&gt;‹Polymorphic›&lt;/i&gt;" vertex="1">
+          <mxGeometry height="22" width="520" y="228" as="geometry" />
+        </mxCell>
+        <mxCell id="mongo-13" parent="mongo-2" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="attributes : [ { k, v, u } ] &amp;nbsp;&lt;i&gt;‹Attribute›&lt;/i&gt;" vertex="1">
+          <mxGeometry height="22" width="520" y="250" as="geometry" />
+        </mxCell>
+        <mxCell id="mongo-14" parent="mongo-2" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;fontColor=#2e7d32;" value="reviews : { count, sum, avg, recent[≤ 5] } &amp;nbsp;&lt;i&gt;‹Subset + Computed›&lt;/i&gt;" vertex="1">
+          <mxGeometry height="22" width="520" y="272" as="geometry" />
+        </mxCell>
+        <mxCell id="mongo-15" parent="mongo-2" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="compatible : [ { _id, sku, name } ] &amp;nbsp;&lt;i&gt;‹Extended Reference›&lt;/i&gt;" vertex="1">
+          <mxGeometry height="22" width="520" y="294" as="geometry" />
+        </mxCell>
+        <mxCell id="mongo-16" parent="mongo-2" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="createdAt, updatedAt : Date" vertex="1">
+          <mxGeometry height="22" width="520" y="316" as="geometry" />
+        </mxCell>
+        <mxCell id="mongo-17" parent="1" style="swimlane;fontStyle=0;html=1;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeLast=0;collapsible=0;marginBottom=0;fillColor=#e6f4ea;strokeColor=#2e7d32;fontSize=12;swimlaneFillColor=#ffffff;" value="&lt;b&gt;categories&lt;/b&gt; &lt;i&gt;(quelques centaines)&lt;/i&gt;" vertex="1">
+          <mxGeometry height="96" width="300" x="890" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="mongo-18" parent="mongo-17" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="_id : ObjectId" vertex="1">
+          <mxGeometry height="22" width="300" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="mongo-19" parent="mongo-17" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="name : string" vertex="1">
+          <mxGeometry height="22" width="300" y="52" as="geometry" />
+        </mxCell>
+        <mxCell id="mongo-20" parent="mongo-17" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="path : string" vertex="1">
+          <mxGeometry height="22" width="300" y="74" as="geometry" />
+        </mxCell>
+        <mxCell id="mongo-21" parent="1" style="swimlane;fontStyle=0;html=1;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeLast=0;collapsible=0;marginBottom=0;fillColor=#e6f4ea;strokeColor=#2e7d32;fontSize=12;swimlaneFillColor=#ffffff;" value="&lt;b&gt;brands&lt;/b&gt; &lt;i&gt;(~600)&lt;/i&gt;" vertex="1">
+          <mxGeometry height="74" width="300" x="950" y="202" as="geometry" />
+        </mxCell>
+        <mxCell id="mongo-22" parent="mongo-21" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="_id : ObjectId" vertex="1">
+          <mxGeometry height="22" width="300" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="mongo-23" parent="mongo-21" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="name : string" vertex="1">
+          <mxGeometry height="22" width="300" y="52" as="geometry" />
+        </mxCell>
+        <mxCell id="mongo-24" parent="1" style="swimlane;fontStyle=0;html=1;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeLast=0;collapsible=0;marginBottom=0;fillColor=#e6f4ea;strokeColor=#2e7d32;fontSize=12;swimlaneFillColor=#ffffff;" value="&lt;b&gt;reviews&lt;/b&gt; &lt;i&gt;(croissance illimitée)&lt;/i&gt;" vertex="1">
+          <mxGeometry height="162" width="340" x="950" y="317" as="geometry" />
+        </mxCell>
+        <mxCell id="mongo-25" parent="mongo-24" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="_id : ObjectId" vertex="1">
+          <mxGeometry height="22" width="340" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="mongo-26" parent="mongo-24" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="productId : ObjectId → products" vertex="1">
+          <mxGeometry height="22" width="340" y="52" as="geometry" />
+        </mxCell>
+        <mxCell id="mongo-27" parent="mongo-24" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="customerId, author : string" vertex="1">
+          <mxGeometry height="22" width="340" y="74" as="geometry" />
+        </mxCell>
+        <mxCell id="mongo-28" parent="mongo-24" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="rating : int · title, body : string" vertex="1">
+          <mxGeometry height="22" width="340" y="96" as="geometry" />
+        </mxCell>
+        <mxCell id="mongo-29" parent="mongo-24" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="verifiedPurchase : bool · helpfulVotes : int" vertex="1">
+          <mxGeometry height="22" width="340" y="118" as="geometry" />
+        </mxCell>
+        <mxCell id="mongo-30" parent="mongo-24" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="createdAt : Date" vertex="1">
+          <mxGeometry height="22" width="340" y="140" as="geometry" />
+        </mxCell>
+        <mxCell id="mongo-31" edge="1" parent="1" source="mongo-8" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=11;labelBackgroundColor=#ffffff;endArrow=block;endFill=1;dashed=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="mongo-19" value="copie name + path&lt;br&gt;(lecture sans $lookup)">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="mongo-32" edge="1" parent="1" source="mongo-9" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=11;labelBackgroundColor=#ffffff;endArrow=block;endFill=1;dashed=1;" target="mongo-21" value="copie name">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="mongo-33" edge="1" parent="1" source="mongo-27" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=11;labelBackgroundColor=#ffffff;endArrow=block;endFill=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" target="mongo-14" value="Reference 1-N&lt;br&gt;(5 derniers imbriqués = Subset)">
+          <mxGeometry relative="1" x="-0.3333" as="geometry">
+            <Array as="points">
+              <mxPoint x="950" y="450" />
+              <mxPoint x="650" y="450" />
+              <mxPoint x="650" y="345" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="mongo-34" parent="1" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=8;fillColor=#e6f4ea;strokeColor=#2e7d32;fontSize=11;arcSize=6;" value="&lt;b&gt;Embedded vs References&lt;/b&gt;&lt;br&gt;On &lt;b&gt;imbrique&lt;/b&gt; ce qui est lu avec la fiche et reste borné (specs, prix, stock, attributes).&lt;br&gt;On &lt;b&gt;référence&lt;/b&gt; ce qui grossit sans limite ou vit seul (tous les avis → reviews).&lt;br&gt;Limite d&#39;un document : 16 Mo. Une fiche = 1 lecture, sans jointure." vertex="1">
+          <mxGeometry height="90" width="520" x="40" y="450" as="geometry" />
+        </mxCell>
+        <mxCell id="mongo-35" parent="1" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=8;fillColor=#fffbe6;strokeColor=#b59b00;fontSize=11;arcSize=6;" value="&lt;b&gt;Index&lt;/b&gt;&lt;br&gt;sku (unique) · slug (unique)&lt;br&gt;{ category.path, price.amount } : listes par catégorie triées par prix&lt;br&gt;brand._id · { attributes.k, attributes.v } : tous les filtres&lt;br&gt;texte (name, description, français)&lt;br&gt;reviews : { productId, createdAt: -1 }" vertex="1">
+          <mxGeometry height="120" width="520" x="40" y="560" as="geometry" />
+        </mxCell>
+        <mxCell id="mongo-36" parent="1" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=8;fillColor=#e6f4ea;strokeColor=#2e7d32;fontSize=11;arcSize=6;" value="&lt;b&gt;CAP : CP&lt;/b&gt; (replica set, primaire unique)&lt;br&gt;• fiches : readPreference secondaryPreferred&lt;br&gt;• prix au paiement : primaire + readConcern majority&lt;br&gt;• écritures : w: majority" vertex="1">
+          <mxGeometry height="90" width="340" x="720" y="520" as="geometry" />
+        </mxCell>
+        <mxCell id="mongo-37" parent="1" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=8;fillColor=#fffbe6;strokeColor=#b59b00;fontSize=11;arcSize=6;" value="&lt;b&gt;Réservation du stock (Q9)&lt;/b&gt;&lt;br&gt;updateOne({ sku, &quot;stock.quantity&quot;: { $gte: qté } },&lt;br&gt;&amp;nbsp;&amp;nbsp;{ $inc: { &quot;stock.quantity&quot;: -qté } })&lt;br&gt;modifiedCount = 0 → rupture.&lt;br&gt;Plusieurs produits : session.withTransaction()" vertex="1">
+          <mxGeometry height="110" width="340" x="720" y="630" as="geometry" />
+        </mxCell>
+        <mxCell id="mongo-38" parent="1" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=8;fillColor=#fffbe6;strokeColor=#b59b00;fontSize=11;arcSize=6;" value="&lt;b&gt;Exemple polymorphe&lt;/b&gt;&lt;br&gt;CPU → specs { socket: &#39;AM5&#39;, cores: 8, tdpW: 120 }&lt;br&gt;Souris → specs { dpi: 32000, buttons: 5, wireless: true }&lt;br&gt;Les deux dans la même collection." vertex="1">
+          <mxGeometry height="80" width="520" x="40" y="700" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="redis" name="3. Lot 2 : Redis">
+    <mxGraphModel dx="1625" dy="854" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1500" pageHeight="950" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="redis-1" parent="1" style="text;html=1;align=left;verticalAlign=middle;fontSize=20;fontStyle=1;strokeColor=none;fillColor=none;" value="Lot 2 : Panier et sessions · Redis (clé-valeur en mémoire)" vertex="1">
+          <mxGeometry height="40" width="1500" x="40" y="10" as="geometry" />
+        </mxCell>
+        <mxCell id="redis-2" parent="1" style="rounded=1;html=1;verticalAlign=top;align=left;spacing=10;dashed=1;fillColor=none;strokeColor=#c0392b;fontSize=12;" value="&lt;b&gt;Instance redis-sessions&lt;/b&gt; · maxmemory-policy &lt;b&gt;noeviction&lt;/b&gt; · Sentinel 1 primaire + 2 réplicas" vertex="1">
+          <mxGeometry height="520" width="900" x="40" y="70" as="geometry" />
+        </mxCell>
+        <mxCell id="redis-3" parent="1" style="swimlane;fontStyle=0;html=1;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeLast=0;collapsible=0;marginBottom=0;fillColor=#fde8e8;strokeColor=#c0392b;fontSize=12;swimlaneFillColor=#ffffff;" value="&lt;b&gt;session:&amp;lt;sessionId&amp;gt;&lt;/b&gt; · Hash" vertex="1">
+          <mxGeometry height="96" width="400" x="70" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="redis-4" parent="redis-3" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="userId, createdAt, lastSeen" vertex="1">
+          <mxGeometry height="22" width="400" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="redis-5" parent="redis-3" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="ip, ua, csrf" vertex="1">
+          <mxGeometry height="22" width="400" y="52" as="geometry" />
+        </mxCell>
+        <mxCell id="redis-6" parent="redis-3" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="TTL &lt;b&gt;30 min glissant&lt;/b&gt; (EXPIRE à chaque requête)" vertex="1">
+          <mxGeometry height="22" width="400" y="74" as="geometry" />
+        </mxCell>
+        <mxCell id="redis-7" parent="1" style="swimlane;fontStyle=0;html=1;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeLast=0;collapsible=0;marginBottom=0;fillColor=#fde8e8;strokeColor=#c0392b;fontSize=12;swimlaneFillColor=#ffffff;" value="&lt;b&gt;cart:anon:&amp;lt;sessionId&amp;gt;&lt;/b&gt; · Hash" vertex="1">
+          <mxGeometry height="74" width="400" x="70" y="260" as="geometry" />
+        </mxCell>
+        <mxCell id="redis-8" parent="redis-7" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="sku → quantité (HINCRBY atomique)" vertex="1">
+          <mxGeometry height="22" width="400" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="redis-9" parent="redis-7" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="TTL &lt;b&gt;7 jours&lt;/b&gt; après la dernière modification" vertex="1">
+          <mxGeometry height="22" width="400" y="52" as="geometry" />
+        </mxCell>
+        <mxCell id="redis-10" parent="1" style="swimlane;fontStyle=0;html=1;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeLast=0;collapsible=0;marginBottom=0;fillColor=#fde8e8;strokeColor=#c0392b;fontSize=12;swimlaneFillColor=#ffffff;" value="&lt;b&gt;cart:user:&amp;lt;userId&amp;gt;&lt;/b&gt; · Hash" vertex="1">
+          <mxGeometry height="74" width="400" x="510" y="260" as="geometry" />
+        </mxCell>
+        <mxCell id="redis-11" parent="redis-10" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="sku → quantité" vertex="1">
+          <mxGeometry height="22" width="400" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="redis-12" parent="redis-10" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="TTL &lt;b&gt;30 jours&lt;/b&gt; · suit le client sur tous ses appareils" vertex="1">
+          <mxGeometry height="22" width="400" y="52" as="geometry" />
+        </mxCell>
+        <mxCell id="redis-13" parent="1" style="swimlane;fontStyle=0;html=1;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeLast=0;collapsible=0;marginBottom=0;fillColor=#fde8e8;strokeColor=#c0392b;fontSize=12;swimlaneFillColor=#ffffff;" value="&lt;b&gt;user:&amp;lt;userId&amp;gt;:sessions&lt;/b&gt; · Set" vertex="1">
+          <mxGeometry height="96" width="400" x="510" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="redis-14" parent="redis-13" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="{ sessionId, … }" vertex="1">
+          <mxGeometry height="22" width="400" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="redis-15" parent="redis-13" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="TTL 30 jours" vertex="1">
+          <mxGeometry height="22" width="400" y="52" as="geometry" />
+        </mxCell>
+        <mxCell id="redis-16" parent="redis-13" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="nettoyage à la lecture : EXISTS puis SREM" vertex="1">
+          <mxGeometry height="22" width="400" y="74" as="geometry" />
+        </mxCell>
+        <mxCell id="redis-17" parent="1" style="swimlane;fontStyle=0;html=1;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeLast=0;collapsible=0;marginBottom=0;fillColor=#fde8e8;strokeColor=#c0392b;fontSize=12;swimlaneFillColor=#ffffff;" value="&lt;b&gt;recent:&amp;lt;sessionId&amp;gt;&lt;/b&gt; · List" vertex="1">
+          <mxGeometry height="74" width="400" x="70" y="400" as="geometry" />
+        </mxCell>
+        <mxCell id="redis-18" parent="redis-17" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="LPUSH sku puis LTRIM 0 9 (10 derniers)" vertex="1">
+          <mxGeometry height="22" width="400" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="redis-19" parent="redis-17" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="TTL 7 jours" vertex="1">
+          <mxGeometry height="22" width="400" y="52" as="geometry" />
+        </mxCell>
+        <mxCell id="redis-20" parent="1" style="rounded=1;html=1;verticalAlign=top;align=left;spacing=10;dashed=1;fillColor=none;strokeColor=#c0392b;fontSize=12;" value="&lt;b&gt;Instance redis-cache&lt;/b&gt; · maxmemory-policy &lt;b&gt;allkeys-lru&lt;/b&gt;" vertex="1">
+          <mxGeometry height="230" width="460" x="990" y="70" as="geometry" />
+        </mxCell>
+        <mxCell id="redis-21" parent="1" style="swimlane;fontStyle=0;html=1;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeLast=0;collapsible=0;marginBottom=0;fillColor=#fde8e8;strokeColor=#c0392b;fontSize=12;swimlaneFillColor=#ffffff;" value="&lt;b&gt;product:&amp;lt;sku&amp;gt;&lt;/b&gt; · Hash" vertex="1">
+          <mxGeometry height="74" width="400" x="1020" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="redis-22" parent="redis-21" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="name, price, stock" vertex="1">
+          <mxGeometry height="22" width="400" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="redis-23" parent="redis-21" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="TTL &lt;b&gt;5 min&lt;/b&gt; · cache-aside devant MongoDB" vertex="1">
+          <mxGeometry height="22" width="400" y="52" as="geometry" />
+        </mxCell>
+        <mxCell id="redis-24" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=12;fillColor=#e6f4ea;strokeColor=#2e7d32;fontSize=11;" value="&lt;b&gt;MongoDB&lt;/b&gt; (Lot 1)" vertex="1">
+          <mxGeometry height="80" width="200" x="1120" y="380" as="geometry" />
+        </mxCell>
+        <mxCell id="redis-25" edge="1" parent="1" source="redis-7" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=11;labelBackgroundColor=#ffffff;endArrow=block;endFill=1;" target="redis-10" value="fusion_panier.lua&lt;br&gt;à la connexion (atomique)">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="redis-26" edge="1" parent="1" source="redis-14" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=11;labelBackgroundColor=#ffffff;endArrow=block;endFill=1;dashed=1;" target="redis-3" value="identifiants de sessions">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="redis-27" edge="1" parent="1" source="redis-24" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=11;labelBackgroundColor=#ffffff;endArrow=block;endFill=1;dashed=1;" target="redis-21" value="change streams&lt;br&gt;invalidation">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="redis-28" parent="1" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=8;fillColor=#fde8e8;strokeColor=#c0392b;fontSize=11;arcSize=6;" value="&lt;b&gt;Pourquoi un Hash pour le panier ?&lt;/b&gt;&lt;br&gt;HINCRBY modifie une ligne de façon atomique : deux clics simultanés = +2.&lt;br&gt;Avec un JSON relu puis réécrit, un ajout serait perdu (lost update).&lt;br&gt;Le panier ne stocke &lt;b&gt;pas les prix&lt;/b&gt; : ils sont relus dans le catalogue." vertex="1">
+          <mxGeometry height="100" width="560" x="40" y="620" as="geometry" />
+        </mxCell>
+        <mxCell id="redis-29" parent="1" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=8;fillColor=#fffbe6;strokeColor=#b59b00;fontSize=11;arcSize=6;" value="&lt;b&gt;CAP : plutôt AP&lt;/b&gt;&lt;br&gt;Réplication asynchrone : quelques ms d&#39;écritures perdues possibles lors d&#39;une bascule.&lt;br&gt;Nuance : la bascule exige une majorité de sentinelles ; min-replicas-to-write limite les pertes.&lt;br&gt;La commande validée ne vit &lt;b&gt;jamais&lt;/b&gt; dans Redis." vertex="1">
+          <mxGeometry height="100" width="560" x="640" y="620" as="geometry" />
+        </mxCell>
+        <mxCell id="redis-30" parent="1" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=8;fillColor=#fffbe6;strokeColor=#b59b00;fontSize=11;arcSize=6;" value="&lt;b&gt;Commandes types&lt;/b&gt;&lt;br&gt;HSET session:s-7f3a9c userId &quot;&quot; createdAt … ; EXPIRE session:s-7f3a9c 1800&lt;br&gt;HINCRBY cart:anon:s-7f3a9c AMD-R7-7800X3D 1 ; EXPIRE cart:anon:s-7f3a9c 604800&lt;br&gt;redis-cli --eval fusion_panier.lua cart:anon:s-7f3a9c cart:user:42 , 2592000" vertex="1">
+          <mxGeometry height="80" width="1160" x="40" y="740" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="cass" name="4. Lot 3 : Cassandra">
+    <mxGraphModel dx="1746" dy="917" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="cass-1" parent="1" style="text;html=1;align=left;verticalAlign=middle;fontSize=20;fontStyle=1;strokeColor=none;fillColor=none;" value="Lot 3 : Logs et analytics · Cassandra (une table par requête)" vertex="1">
+          <mxGeometry height="40" width="1500" x="40" y="10" as="geometry" />
+        </mxCell>
+        <mxCell id="cass-2" parent="1" style="swimlane;fontStyle=0;html=1;childLayout=stackLayout;horizontal=1;startSize=44;horizontalStack=0;resizeParent=1;resizeLast=0;collapsible=0;marginBottom=0;fillColor=#e3f3f8;strokeColor=#1b6f8c;fontSize=12;swimlaneFillColor=#ffffff;" value="&lt;b&gt;T1 · events_by_hour&lt;/b&gt;&lt;br&gt;&lt;i&gt;journal brut, rejouable&lt;/i&gt;" vertex="1">
+          <mxGeometry height="198" width="420" x="40" y="70" as="geometry" />
+        </mxCell>
+        <mxCell id="cass-3" parent="cass-2" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;fillColor=#fbe3e3;fontStyle=1;" value="day : date (UTC)&amp;nbsp;&amp;nbsp;&lt;b&gt;[K]&lt;/b&gt; partition" vertex="1">
+          <mxGeometry height="22" width="420" y="44" as="geometry" />
+        </mxCell>
+        <mxCell id="cass-4" parent="cass-2" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;fillColor=#fbe3e3;fontStyle=1;" value="hour : tinyint (UTC)&amp;nbsp;&amp;nbsp;&lt;b&gt;[K]&lt;/b&gt; partition" vertex="1">
+          <mxGeometry height="22" width="420" y="66" as="geometry" />
+        </mxCell>
+        <mxCell id="cass-5" parent="cass-2" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;fillColor=#fbe3e3;fontStyle=1;" value="bucket : tinyint = hash(session_id) % 8&amp;nbsp;&amp;nbsp;&lt;b&gt;[K]&lt;/b&gt; partition" vertex="1">
+          <mxGeometry height="22" width="420" y="88" as="geometry" />
+        </mxCell>
+        <mxCell id="cass-6" parent="cass-2" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;fillColor=#dcecf7;fontStyle=1;" value="event_time : timestamp&amp;nbsp;&amp;nbsp;&lt;b&gt;[C↓]&lt;/b&gt; clustering" vertex="1">
+          <mxGeometry height="22" width="420" y="110" as="geometry" />
+        </mxCell>
+        <mxCell id="cass-7" parent="cass-2" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;fillColor=#dcecf7;fontStyle=1;" value="event_id : timeuuid&amp;nbsp;&amp;nbsp;&lt;b&gt;[C↓]&lt;/b&gt; clustering" vertex="1">
+          <mxGeometry height="22" width="420" y="132" as="geometry" />
+        </mxCell>
+        <mxCell id="cass-8" parent="cass-2" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="event_type, visitor_id, session_id, sku, page, search_query, device" vertex="1">
+          <mxGeometry height="22" width="420" y="154" as="geometry" />
+        </mxCell>
+        <mxCell id="cass-9" parent="cass-2" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="TTL 395 j (13 mois) · TWCS fenêtres de 14 j" vertex="1">
+          <mxGeometry height="22" width="420" y="176" as="geometry" />
+        </mxCell>
+        <mxCell id="cass-10" parent="1" style="swimlane;fontStyle=0;html=1;childLayout=stackLayout;horizontal=1;startSize=44;horizontalStack=0;resizeParent=1;resizeLast=0;collapsible=0;marginBottom=0;fillColor=#e3f3f8;strokeColor=#1b6f8c;fontSize=12;swimlaneFillColor=#ffffff;" value="&lt;b&gt;T2 · events_by_visitor&lt;/b&gt;&lt;br&gt;&lt;i&gt;« parcours d&#39;un visiteur »&lt;/i&gt;" vertex="1">
+          <mxGeometry height="176" width="420" x="40" y="340" as="geometry" />
+        </mxCell>
+        <mxCell id="cass-11" parent="cass-10" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;fillColor=#fbe3e3;fontStyle=1;" value="visitor_id : text&amp;nbsp;&amp;nbsp;&lt;b&gt;[K]&lt;/b&gt; partition" vertex="1">
+          <mxGeometry height="22" width="420" y="44" as="geometry" />
+        </mxCell>
+        <mxCell id="cass-12" parent="cass-10" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;fillColor=#fbe3e3;fontStyle=1;" value="month : text &#39;2026-11&#39; (UTC)&amp;nbsp;&amp;nbsp;&lt;b&gt;[K]&lt;/b&gt; partition" vertex="1">
+          <mxGeometry height="22" width="420" y="66" as="geometry" />
+        </mxCell>
+        <mxCell id="cass-13" parent="cass-10" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;fillColor=#dcecf7;fontStyle=1;" value="event_time : timestamp&amp;nbsp;&amp;nbsp;&lt;b&gt;[C↓]&lt;/b&gt; clustering" vertex="1">
+          <mxGeometry height="22" width="420" y="88" as="geometry" />
+        </mxCell>
+        <mxCell id="cass-14" parent="cass-10" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;fillColor=#dcecf7;fontStyle=1;" value="event_id : timeuuid&amp;nbsp;&amp;nbsp;&lt;b&gt;[C↓]&lt;/b&gt; clustering" vertex="1">
+          <mxGeometry height="22" width="420" y="110" as="geometry" />
+        </mxCell>
+        <mxCell id="cass-15" parent="cass-10" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="event_type, sku, page, search_query" vertex="1">
+          <mxGeometry height="22" width="420" y="132" as="geometry" />
+        </mxCell>
+        <mxCell id="cass-16" parent="cass-10" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="TTL 395 j · TWCS 14 j" vertex="1">
+          <mxGeometry height="22" width="420" y="154" as="geometry" />
+        </mxCell>
+        <mxCell id="cass-17" parent="1" style="swimlane;fontStyle=0;html=1;childLayout=stackLayout;horizontal=1;startSize=44;horizontalStack=0;resizeParent=1;resizeLast=0;collapsible=0;marginBottom=0;fillColor=#e3f3f8;strokeColor=#1b6f8c;fontSize=12;swimlaneFillColor=#ffffff;" value="&lt;b&gt;T3 · product_views_by_day&lt;/b&gt;&lt;br&gt;&lt;i&gt;« combien de vues aujourd&#39;hui ? »&lt;/i&gt;" vertex="1">
+          <mxGeometry height="110" width="360" x="540" y="70" as="geometry" />
+        </mxCell>
+        <mxCell id="cass-18" parent="cass-17" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;fillColor=#fbe3e3;fontStyle=1;" value="sku : text&amp;nbsp;&amp;nbsp;&lt;b&gt;[K]&lt;/b&gt; partition" vertex="1">
+          <mxGeometry height="22" width="360" y="44" as="geometry" />
+        </mxCell>
+        <mxCell id="cass-19" parent="cass-17" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;fillColor=#dcecf7;fontStyle=1;" value="day : date&amp;nbsp;&amp;nbsp;&lt;b&gt;[C↓]&lt;/b&gt; clustering" vertex="1">
+          <mxGeometry height="22" width="360" y="66" as="geometry" />
+        </mxCell>
+        <mxCell id="cass-20" parent="cass-17" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="views : counter" vertex="1">
+          <mxGeometry height="22" width="360" y="88" as="geometry" />
+        </mxCell>
+        <mxCell id="cass-21" parent="1" style="swimlane;fontStyle=0;html=1;childLayout=stackLayout;horizontal=1;startSize=44;horizontalStack=0;resizeParent=1;resizeLast=0;collapsible=0;marginBottom=0;fillColor=#e3f3f8;strokeColor=#1b6f8c;fontSize=12;swimlaneFillColor=#ffffff;" value="&lt;b&gt;T4 · daily_views_by_product&lt;/b&gt;&lt;br&gt;&lt;i&gt;source du classement&lt;/i&gt;" vertex="1">
+          <mxGeometry height="132" width="360" x="540" y="230" as="geometry" />
+        </mxCell>
+        <mxCell id="cass-22" parent="cass-21" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;fillColor=#fbe3e3;fontStyle=1;" value="day : date&amp;nbsp;&amp;nbsp;&lt;b&gt;[K]&lt;/b&gt; partition" vertex="1">
+          <mxGeometry height="22" width="360" y="44" as="geometry" />
+        </mxCell>
+        <mxCell id="cass-23" parent="cass-21" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;fillColor=#fbe3e3;fontStyle=1;" value="bucket : tinyint = hash(sku) % 8&amp;nbsp;&amp;nbsp;&lt;b&gt;[K]&lt;/b&gt; partition" vertex="1">
+          <mxGeometry height="22" width="360" y="66" as="geometry" />
+        </mxCell>
+        <mxCell id="cass-24" parent="cass-21" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;fillColor=#dcecf7;fontStyle=1;" value="sku : text&amp;nbsp;&amp;nbsp;&lt;b&gt;[C↑]&lt;/b&gt; clustering" vertex="1">
+          <mxGeometry height="22" width="360" y="88" as="geometry" />
+        </mxCell>
+        <mxCell id="cass-25" parent="cass-21" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="views : counter" vertex="1">
+          <mxGeometry height="22" width="360" y="110" as="geometry" />
+        </mxCell>
+        <mxCell id="cass-26" parent="1" style="swimlane;fontStyle=0;html=1;childLayout=stackLayout;horizontal=1;startSize=44;horizontalStack=0;resizeParent=1;resizeLast=0;collapsible=0;marginBottom=0;fillColor=#e3f3f8;strokeColor=#1b6f8c;fontSize=12;swimlaneFillColor=#ffffff;" value="&lt;b&gt;T6 · search_terms_by_day&lt;/b&gt;&lt;br&gt;&lt;i&gt;recherches du jour&lt;/i&gt;" vertex="1">
+          <mxGeometry height="132" width="360" x="540" y="420" as="geometry" />
+        </mxCell>
+        <mxCell id="cass-27" parent="cass-26" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;fillColor=#fbe3e3;fontStyle=1;" value="day : date&amp;nbsp;&amp;nbsp;&lt;b&gt;[K]&lt;/b&gt; partition" vertex="1">
+          <mxGeometry height="22" width="360" y="44" as="geometry" />
+        </mxCell>
+        <mxCell id="cass-28" parent="cass-26" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;fillColor=#fbe3e3;fontStyle=1;" value="bucket : tinyint = hash(term) % 8&amp;nbsp;&amp;nbsp;&lt;b&gt;[K]&lt;/b&gt; partition" vertex="1">
+          <mxGeometry height="22" width="360" y="66" as="geometry" />
+        </mxCell>
+        <mxCell id="cass-29" parent="cass-26" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;fillColor=#dcecf7;fontStyle=1;" value="term : text (normalisé)&amp;nbsp;&amp;nbsp;&lt;b&gt;[C↑]&lt;/b&gt; clustering" vertex="1">
+          <mxGeometry height="22" width="360" y="88" as="geometry" />
+        </mxCell>
+        <mxCell id="cass-30" parent="cass-26" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="searches : counter" vertex="1">
+          <mxGeometry height="22" width="360" y="110" as="geometry" />
+        </mxCell>
+        <mxCell id="cass-31" parent="1" style="swimlane;fontStyle=0;html=1;childLayout=stackLayout;horizontal=1;startSize=44;horizontalStack=0;resizeParent=1;resizeLast=0;collapsible=0;marginBottom=0;fillColor=#e3f3f8;strokeColor=#1b6f8c;fontSize=12;swimlaneFillColor=#ffffff;" value="&lt;b&gt;T5 · top_products_by_period&lt;/b&gt;&lt;br&gt;&lt;i&gt;« top produits de la semaine ? »&lt;/i&gt;" vertex="1">
+          <mxGeometry height="132" width="400" x="1000" y="300" as="geometry" />
+        </mxCell>
+        <mxCell id="cass-32" parent="cass-31" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;fillColor=#fbe3e3;fontStyle=1;" value="period_type : &#39;day&#39; | &#39;week&#39; | &#39;search_day&#39;&amp;nbsp;&amp;nbsp;&lt;b&gt;[K]&lt;/b&gt; partition" vertex="1">
+          <mxGeometry height="22" width="400" y="44" as="geometry" />
+        </mxCell>
+        <mxCell id="cass-33" parent="cass-31" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;fillColor=#fbe3e3;fontStyle=1;" value="period : &#39;2026-W47&#39;&amp;nbsp;&amp;nbsp;&lt;b&gt;[K]&lt;/b&gt; partition" vertex="1">
+          <mxGeometry height="22" width="400" y="66" as="geometry" />
+        </mxCell>
+        <mxCell id="cass-34" parent="cass-31" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;fillColor=#dcecf7;fontStyle=1;" value="rank : int&amp;nbsp;&amp;nbsp;&lt;b&gt;[C↑]&lt;/b&gt; clustering" vertex="1">
+          <mxGeometry height="22" width="400" y="88" as="geometry" />
+        </mxCell>
+        <mxCell id="cass-35" parent="cass-31" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="sku, name, views, computed_at" vertex="1">
+          <mxGeometry height="22" width="400" y="110" as="geometry" />
+        </mxCell>
+        <mxCell id="cass-36" parent="1" style="swimlane;fontStyle=0;html=1;childLayout=stackLayout;horizontal=1;startSize=44;horizontalStack=0;resizeParent=1;resizeLast=0;collapsible=0;marginBottom=0;fillColor=#e3f3f8;strokeColor=#1b6f8c;fontSize=12;swimlaneFillColor=#ffffff;" value="&lt;b&gt;T7 · orders_by_customer&lt;/b&gt;&lt;br&gt;&lt;i&gt;« historique des commandes d&#39;un client »&lt;/i&gt;" vertex="1">
+          <mxGeometry height="176" width="400" x="1000" y="520" as="geometry" />
+        </mxCell>
+        <mxCell id="cass-37" parent="cass-36" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;fillColor=#fbe3e3;fontStyle=1;" value="customer_id : text&amp;nbsp;&amp;nbsp;&lt;b&gt;[K]&lt;/b&gt; partition" vertex="1">
+          <mxGeometry height="22" width="400" y="44" as="geometry" />
+        </mxCell>
+        <mxCell id="cass-38" parent="cass-36" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;fillColor=#dcecf7;fontStyle=1;" value="order_date : timestamp&amp;nbsp;&amp;nbsp;&lt;b&gt;[C↓]&lt;/b&gt; clustering" vertex="1">
+          <mxGeometry height="22" width="400" y="66" as="geometry" />
+        </mxCell>
+        <mxCell id="cass-39" parent="cass-36" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;fillColor=#dcecf7;fontStyle=1;" value="order_id : text&amp;nbsp;&amp;nbsp;&lt;b&gt;[C↑]&lt;/b&gt; clustering" vertex="1">
+          <mxGeometry height="22" width="400" y="88" as="geometry" />
+        </mxCell>
+        <mxCell id="cass-40" parent="cass-36" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="status, total, shipping_city" vertex="1">
+          <mxGeometry height="22" width="400" y="110" as="geometry" />
+        </mxCell>
+        <mxCell id="cass-41" parent="cass-36" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="items : list&amp;lt;frozen&amp;lt;order_item&amp;gt;&amp;gt;" vertex="1">
+          <mxGeometry height="22" width="400" y="132" as="geometry" />
+        </mxCell>
+        <mxCell id="cass-42" parent="cass-36" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="LOCAL_QUORUM (R + W &amp;gt; RF) · pas de TTL (10 ans)" vertex="1">
+          <mxGeometry height="22" width="400" y="154" as="geometry" />
+        </mxCell>
+        <mxCell id="cass-43" parent="1" style="swimlane;fontStyle=0;html=1;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeLast=0;collapsible=0;marginBottom=0;fillColor=#e3f3f8;strokeColor=#1b6f8c;fontSize=12;swimlaneFillColor=#ffffff;" value="&lt;b&gt;UDT order_item&lt;/b&gt;" vertex="1">
+          <mxGeometry height="96" width="300" x="1000" y="790" as="geometry" />
+        </mxCell>
+        <mxCell id="cass-44" parent="cass-43" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="sku, name" vertex="1">
+          <mxGeometry height="22" width="300" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="cass-45" parent="cass-43" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="quantity : int" vertex="1">
+          <mxGeometry height="22" width="300" y="52" as="geometry" />
+        </mxCell>
+        <mxCell id="cass-46" parent="cass-43" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=6;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=11;" value="unit_price : decimal (figé à l&#39;achat)" vertex="1">
+          <mxGeometry height="22" width="300" y="74" as="geometry" />
+        </mxCell>
+        <mxCell id="cass-47" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff4dd;strokeColor=#c98a00;fontSize=11;" value="&lt;b&gt;Consommateur Kafka&lt;/b&gt;&lt;br&gt;écritures async · LOCAL_ONE&lt;br&gt;compteurs pré-agrégés" vertex="1">
+          <mxGeometry height="70" width="240" x="1020" y="90" as="geometry" />
+        </mxCell>
+        <mxCell id="cass-48" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f6f6f6;strokeColor=#777777;fontSize=11;" value="&lt;b&gt;API au paiement&lt;/b&gt;&lt;br&gt;écriture synchrone" vertex="1">
+          <mxGeometry height="60" width="180" x="1300" y="790" as="geometry" />
+        </mxCell>
+        <mxCell id="cass-49" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f6f6f6;strokeColor=#777777;fontSize=11;" value="&lt;b&gt;Job horaire&lt;/b&gt;&lt;br&gt;additionne, trie, top 100" vertex="1">
+          <mxGeometry height="50" width="200" x="1000" y="210" as="geometry" />
+        </mxCell>
+        <mxCell id="cass-50" edge="1" parent="1" source="cass-47" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=11;labelBackgroundColor=#ffffff;endArrow=block;endFill=1;dashed=1;strokeColor=#c98a00;" target="cass-2" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cass-51" edge="1" parent="1" source="cass-47" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=11;labelBackgroundColor=#ffffff;endArrow=block;endFill=1;dashed=1;strokeColor=#c98a00;" target="cass-10" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cass-52" edge="1" parent="1" source="cass-47" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=11;labelBackgroundColor=#ffffff;endArrow=block;endFill=1;dashed=1;strokeColor=#c98a00;" target="cass-17" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cass-53" edge="1" parent="1" source="cass-47" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=11;labelBackgroundColor=#ffffff;endArrow=block;endFill=1;dashed=1;strokeColor=#c98a00;" target="cass-21" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cass-54" edge="1" parent="1" source="cass-47" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=11;labelBackgroundColor=#ffffff;endArrow=block;endFill=1;dashed=1;strokeColor=#c98a00;" target="cass-26" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cass-55" edge="1" parent="1" source="cass-21" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=11;labelBackgroundColor=#ffffff;endArrow=block;endFill=1;dashed=1;" target="cass-49" value="7 j × 8 buckets">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cass-56" edge="1" parent="1" source="cass-26" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=11;labelBackgroundColor=#ffffff;endArrow=block;endFill=1;dashed=1;" target="cass-49" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cass-57" edge="1" parent="1" source="cass-49" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=11;labelBackgroundColor=#ffffff;endArrow=block;endFill=1;dashed=1;" target="cass-31" value="écrit le classement">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cass-58" edge="1" parent="1" source="cass-41" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=11;labelBackgroundColor=#ffffff;endArrow=block;endFill=1;" target="cass-43" value="items">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cass-59" edge="1" parent="1" source="cass-48" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=11;labelBackgroundColor=#ffffff;endArrow=block;endFill=1;" target="cass-36" value="INSERT idempotent">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cass-60" parent="1" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=8;fillColor=#e3f3f8;strokeColor=#1b6f8c;fontSize=11;arcSize=6;" value="&lt;b&gt;Légende&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;background:#fbe3e3&quot;&gt;&lt;b&gt;[K]&lt;/b&gt; Partition Key&lt;/span&gt; : quelle machine stocke la donnée ; une requête doit la fournir en entier.&lt;br&gt;&lt;span style=&quot;background:#dcecf7&quot;&gt;&lt;b&gt;[C↓]/[C↑]&lt;/b&gt; Clustering Column&lt;/span&gt; : ordre de tri dans la partition (tranches et tri gratuits)." vertex="1">
+          <mxGeometry height="110" width="420" x="40" y="560" as="geometry" />
+        </mxCell>
+        <mxCell id="cass-61" parent="1" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=8;fillColor=#fffbe6;strokeColor=#b59b00;fontSize=11;arcSize=6;" value="&lt;b&gt;Pourquoi (day, hour, bucket) ?&lt;/b&gt;&lt;br&gt;day seul : 20 M × 250 o = &lt;b&gt;5 Go&lt;/b&gt; et toutes les écritures sur 3 nœuds (hot spot).&lt;br&gt;+ hour : &lt;b&gt;500 Mo&lt;/b&gt; à l&#39;heure de pointe, encore trop.&lt;br&gt;+ bucket (÷ 8) : &lt;b&gt;≈ 62 Mo&lt;/b&gt;, réparti sur le cluster.&lt;br&gt;Même raisonnement pour T4 et T6 (bucket dans la clé)." vertex="1">
+          <mxGeometry height="120" width="420" x="40" y="690" as="geometry" />
+        </mxCell>
+        <mxCell id="cass-62" parent="1" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=8;fillColor=#e3f3f8;strokeColor=#1b6f8c;fontSize=11;arcSize=6;" value="&lt;b&gt;CAP : AP&lt;/b&gt;, cohérence réglable (RF = 3)&lt;br&gt;Logs : LOCAL_ONE (débit).&lt;br&gt;Commandes : LOCAL_QUORUM en écriture et lecture → 2 + 2 &amp;gt; 3.&lt;br&gt;Cassandra ne trie pas sur un compteur → top pré-calculé (T5)." vertex="1">
+          <mxGeometry height="100" width="360" x="540" y="620" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="neo" name="5. Lot 4 : Neo4j">
+    <mxGraphModel dx="1644" dy="864" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1000" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="neo-1" parent="1" style="text;html=1;align=left;verticalAlign=middle;fontSize=20;fontStyle=1;strokeColor=none;fillColor=none;" value="Lot 4 : Recommandations · Neo4j (graphe)" vertex="1">
+          <mxGeometry height="40" width="1500" x="40" y="10" as="geometry" />
+        </mxCell>
+        <mxCell id="neo-2" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#e8eefc;strokeColor=#1a56db;fontSize=11;" value="&lt;b&gt;:Customer&lt;/b&gt;&lt;br&gt;id (pseudonymisé)" vertex="1">
+          <mxGeometry height="90" width="170" x="40" y="220" as="geometry" />
+        </mxCell>
+        <mxCell id="neo-3" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#e8eefc;strokeColor=#1a56db;fontSize=11;" value="&lt;b&gt;:Order&lt;/b&gt;&lt;br&gt;id, date" vertex="1">
+          <mxGeometry height="90" width="150" x="300" y="220" as="geometry" />
+        </mxCell>
+        <mxCell id="neo-4" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#e8eefc;strokeColor=#1a56db;fontSize=11;" value="&lt;b&gt;:Product&lt;/b&gt;&lt;br&gt;sku (unique), name, price&lt;br&gt;lengthMm, maxGpuLengthMm" vertex="1">
+          <mxGeometry height="120" width="230" x="560" y="205" as="geometry" />
+        </mxCell>
+        <mxCell id="neo-5" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#e8eefc;strokeColor=#1a56db;fontSize=11;" value="&lt;b&gt;:Category&lt;/b&gt;&lt;br&gt;name" vertex="1">
+          <mxGeometry height="80" width="150" x="950" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="neo-6" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#e8eefc;strokeColor=#1a56db;fontSize=11;" value="&lt;b&gt;:Brand&lt;/b&gt;&lt;br&gt;name" vertex="1">
+          <mxGeometry height="80" width="150" x="950" y="225" as="geometry" />
+        </mxCell>
+        <mxCell id="neo-7" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#e8eefc;strokeColor=#1a56db;fontSize=11;" value="&lt;b&gt;:Range&lt;/b&gt;&lt;br&gt;name (gamme)" vertex="1">
+          <mxGeometry height="80" width="150" x="950" y="370" as="geometry" />
+        </mxCell>
+        <mxCell id="neo-8" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#e8eefc;strokeColor=#1a56db;fontSize=11;" value="&lt;b&gt;:Standard&lt;/b&gt;&lt;br&gt;code (AM5, DDR5, ATX…)&lt;br&gt;kind (socket, memoire, format)" vertex="1">
+          <mxGeometry height="110" width="230" x="560" y="470" as="geometry" />
+        </mxCell>
+        <mxCell id="neo-9" edge="1" parent="1" source="neo-2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=11;labelBackgroundColor=#ffffff;endArrow=block;endFill=1;" target="neo-3" value="PLACED">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="neo-10" edge="1" parent="1" source="neo-3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=11;labelBackgroundColor=#ffffff;endArrow=block;endFill=1;" target="neo-4" value="CONTAINS&lt;br&gt;{quantity}">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="neo-11" edge="1" parent="1" source="neo-4" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=11;labelBackgroundColor=#ffffff;endArrow=block;endFill=1;" target="neo-5" value="IN_CATEGORY">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="neo-12" edge="1" parent="1" source="neo-4" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=11;labelBackgroundColor=#ffffff;endArrow=block;endFill=1;" target="neo-6" value="MADE_BY">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="neo-13" edge="1" parent="1" source="neo-4" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=11;labelBackgroundColor=#ffffff;endArrow=block;endFill=1;" target="neo-7" value="IN_RANGE">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="neo-14" edge="1" parent="1" source="neo-4" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=11;labelBackgroundColor=#ffffff;endArrow=block;endFill=1;exitX=0.35;exitY=1;entryX=0.35;entryY=0;" target="neo-8" value="USES&lt;br&gt;(est de ce standard)">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="neo-15" edge="1" parent="1" source="neo-4" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=11;labelBackgroundColor=#ffffff;endArrow=block;endFill=1;exitX=0.7;exitY=1;entryX=0.7;entryY=0;" target="neo-8" value="ACCEPTS&lt;br&gt;(accueille ce standard)">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="neo-16" edge="1" parent="1" source="neo-4" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=11;labelBackgroundColor=#ffffff;endArrow=block;endFill=1;exitX=0.8;exitY=0;entryX=0.2;entryY=0;" target="neo-4" value="BOUGHT_WITH {count, updatedAt}&lt;br&gt;matérialisée, incrémentée à chaque commande">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="744" y="150" />
+              <mxPoint x="606" y="150" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="neo-17" parent="1" style="text;html=1;fontSize=13;strokeColor=none;fillColor=none;align=left;" value="&lt;b&gt;Exemple : compatibilité par les standards&lt;/b&gt;" vertex="1">
+          <mxGeometry height="30" width="760" x="40" y="640" as="geometry" />
+        </mxCell>
+        <mxCell id="neo-18" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#1a56db;fontSize=11;" value="Ryzen 7 7800X3D" vertex="1">
+          <mxGeometry height="40" width="150" x="40" y="690" as="geometry" />
+        </mxCell>
+        <mxCell id="neo-19" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#e8eefc;strokeColor=#1a56db;fontSize=11;fontStyle=1;" value="AM5" vertex="1">
+          <mxGeometry height="40" width="80" x="260" y="690" as="geometry" />
+        </mxCell>
+        <mxCell id="neo-20" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#1a56db;fontSize=11;" value="ASUS B650-Plus" vertex="1">
+          <mxGeometry height="40" width="150" x="410" y="690" as="geometry" />
+        </mxCell>
+        <mxCell id="neo-21" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#e8eefc;strokeColor=#1a56db;fontSize=11;fontStyle=1;" value="ATX" vertex="1">
+          <mxGeometry height="40" width="80" x="410" y="790" as="geometry" />
+        </mxCell>
+        <mxCell id="neo-22" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#1a56db;fontSize=11;" value="NZXT H5 Flow (boîtier)" vertex="1">
+          <mxGeometry height="40" width="170" x="600" y="790" as="geometry" />
+        </mxCell>
+        <mxCell id="neo-23" edge="1" parent="1" source="neo-18" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=11;labelBackgroundColor=#ffffff;endArrow=block;endFill=1;" target="neo-19" value="USES">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="neo-24" edge="1" parent="1" source="neo-20" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=11;labelBackgroundColor=#ffffff;endArrow=block;endFill=1;" target="neo-19" value="USES">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="neo-25" edge="1" parent="1" source="neo-20" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=11;labelBackgroundColor=#ffffff;endArrow=block;endFill=1;" target="neo-21" value="USES">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="neo-26" edge="1" parent="1" source="neo-22" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=11;labelBackgroundColor=#ffffff;endArrow=block;endFill=1;" target="neo-21" value="ACCEPTS">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="neo-27" parent="1" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=8;fillColor=#e8eefc;strokeColor=#1a56db;fontSize=11;arcSize=6;" value="&lt;b&gt;Pourquoi des nœuds Standard ?&lt;/b&gt;&lt;br&gt;Liens directs : 50 CPU AM5 × 150 cartes mères = &lt;b&gt;7 500&lt;/b&gt; relations.&lt;br&gt;Via le nœud AM5 : 50 + 150 = &lt;b&gt;200&lt;/b&gt; relations, et une nouvelle carte AM5 est compatible d&#39;office.&lt;br&gt;USES ≠ ACCEPTS : un boîtier ATX accueille aussi l&#39;ITX (compatibilité non symétrique)." vertex="1">
+          <mxGeometry height="120" width="420" x="1150" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="neo-28" parent="1" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=8;fillColor=#fffbe6;strokeColor=#b59b00;fontSize=11;arcSize=6;" value="&lt;b&gt;Supernœud et BOUGHT_WITH&lt;/b&gt;&lt;br&gt;Un produit vedette dans 50 000 commandes rendrait « achetés ensemble » trop coûteux.&lt;br&gt;→ relation matérialisée : 1 saut à la lecture.&lt;br&gt;→ mise à jour &lt;b&gt;incrémentale&lt;/b&gt; à l&#39;ingestion d&#39;une commande (quelques paires, idempotente) + réconciliation hebdomadaire." vertex="1">
+          <mxGeometry height="130" width="420" x="1150" y="220" as="geometry" />
+        </mxCell>
+        <mxCell id="neo-29" parent="1" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=8;fillColor=#fffbe6;strokeColor=#b59b00;fontSize=11;arcSize=6;" value="&lt;b&gt;Requêtes types&lt;/b&gt;&lt;br&gt;Q1 : (p)&amp;lt;-[:CONTAINS]-(o)-[:CONTAINS]-&amp;gt;(autre) : achetés ensemble&lt;br&gt;Q2 : (boîtier)-[:ACCEPTS]-&amp;gt;(:Standard)&amp;lt;-[:USES]-(cm) + longueur GPU&lt;br&gt;Q3 : configurateur CPU → carte mère → RAM → boîtier (6 sauts)&lt;br&gt;Q4 : similaires (gamme +3, marque +2, socket/mémoire +1)&lt;br&gt;Q5 : filtrage collaboratif (clients aux achats communs)&lt;br&gt;Q7 : ingestion d&#39;une commande + BOUGHT_WITH" vertex="1">
+          <mxGeometry height="150" width="420" x="1150" y="370" as="geometry" />
+        </mxCell>
+        <mxCell id="neo-30" parent="1" style="rounded=1;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=8;fillColor=#e8eefc;strokeColor=#1a56db;fontSize=11;arcSize=6;" value="&lt;b&gt;CAP : CP&lt;/b&gt; pour les écritures (consensus Raft)&lt;br&gt;Recommandations lues sur les read replicas (cohérence éventuelle, quelques secondes de retard acceptables).&lt;br&gt;Graphe minimal : identifiants seulement (RGPD)." vertex="1">
+          <mxGeometry height="100" width="420" x="1150" y="540" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
